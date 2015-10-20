@@ -2,7 +2,16 @@
 instant-mongo
 =============
 
-Usage:
+Installation
+------------
+
+```sh
+$ pip install git+https://github.com/messa/instant-mongo
+```
+
+
+Usage
+-----
 
 ```python
 from instant_mongo import InstantMongoDB
