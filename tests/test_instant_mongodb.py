@@ -16,3 +16,13 @@ def test_run(tmpdir):
             doc, = im.testdb.testcoll.find()
             assert doc['foo'] == 'bar'
             im.testdb.testcoll.drop()
+
+
+def test_drop_everything(tmpdir):
+    im = InstantMongoDB(data_dir=tmpdir / 'data')
+    with im:
+        im.testdb.testcoll.insert({'foo': 'bar'})
+        assert im.testdb.testcoll.count() == 1
+        im.drop_everything()
+        assert im.testdb.testcoll.count() == 0
+    assert 0

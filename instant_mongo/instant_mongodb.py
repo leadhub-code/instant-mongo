@@ -12,6 +12,21 @@ logger = logging.getLogger(__short_name)
 
 
 class InstantMongoDB:
+    '''
+    Usage:
+
+    with InstantMongoDB(data_dir='/tmp/data') as im:
+        print(im.testdb.collection_names())
+
+    The database is automatically stopped at the end of the with-block.
+
+    Available attributes and methods:
+
+    - im.mongodb_uri is 'mongodb://127.0.0.1:{port}'
+    - im.client is pymongo.MongoClient(im.mongodb_uri)
+    - im.testdb is im.client.testdb
+    - im.drop_everything() drops all collections; intended for tests
+    '''
 
     def __init__(self, data_dir, port=None, bind_ip='127.0.0.1', wired_tiger=True, wired_tiger_zlib=False):
         self.logger = logger
@@ -114,3 +129,13 @@ class InstantMongoDB:
         t = threading.Thread(target=f)
         t.start()
         return t
+
+    def drop_everything(self):
+        for dbname in self.client.database_names():
+            if dbname == 'local':
+                continue
+            for collname in self.client[dbname].collection_names():
+                if collname.startswith('system.'):
+                    continue
+                self.logger.info('drop_everything: dropping collection %s.%s', dbname, collname)
+                self.client[dbname][collname].drop()

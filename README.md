@@ -21,3 +21,14 @@ with im:
     doc, = im.testdb.testcoll.find()
     assert doc['foo'] == 'bar'
 ```
+
+Available attributes and methods:
+
+- `im.mongodb_uri` is `'mongodb://127.0.0.1:{port}'`
+- `im.client` is `pymongo.MongoClient(im.mongodb_uri)`
+- `im.testdb` is `im.client.testdb`
+- `im.drop_everything()` drops all collections; intended for tests
+
+If you run MongoDB in `/tmp` and you have your `/tmp` on ramdisk (tmpfs) then it's super fast. I'm recommending this setup for your tests.
+
+WiredTiger engine is used by default which has smaller disk space footprint so there is no need for multi-GB available space (on your tmpfs `/tmp` for example).
