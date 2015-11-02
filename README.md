@@ -15,8 +15,7 @@ Usage
 
 ```python
 from instant_mongo import InstantMongoDB
-im = InstantMongoDB(data_dir=tmpdir / 'data')
-with im:
+with InstantMongoDB(data_dir=tmpdir / 'data') as im:
     im.testdb.testcoll.insert({'foo': 'bar'})
     doc, = im.testdb.testcoll.find()
     assert doc['foo'] == 'bar'
@@ -46,7 +45,6 @@ def mongodb(global_mongodb):
     global_mongodb.drop_everything()
     return global_mongodb.testdb
 
-
 @pytest.yield_fixture(scope='session')
 def global_mongodb(tmpdir_factory):
     with InstantMongoDB(data_dir=tmpdir_factory.mktemp('instant-mongo-data')) as im:
@@ -59,4 +57,3 @@ def test_mongodb_works(mongodb):
     doc, = mongodb.testcoll.find()
     assert doc['foo'] == 'bar'
 ```
-
