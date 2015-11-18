@@ -2,11 +2,18 @@
 instant-mongo
 =============
 
+
 Installation
 ------------
 
 ```sh
 $ pip install git+https://github.com/messa/instant-mongo
+```
+
+Or add this to your `requirements.txt`:
+
+```
+git+https://github.com/messa/instant-mongo#egg=instant-mongo
 ```
 
 
