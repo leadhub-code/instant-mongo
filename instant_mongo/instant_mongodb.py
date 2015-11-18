@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 import logging
 from pathlib import Path
 import pymongo
@@ -88,7 +89,8 @@ class InstantMongoDB:
             self._stderr_thread = self._tail(self._mongod_process.stderr, 'stderr')
             wait_for_accepting_tcp_conns(port=self.port, timeout=10)
             self.mongodb_uri = 'mongodb://127.0.0.1:{port}'.format(port=self.port)
-            self.client = pymongo.MongoClient(self.mongodb_uri)
+            with patch_pymongo_periodic_executor():
+                self.client = pymongo.MongoClient(self.mongodb_uri)
             self.testdb = self.client.test
         except BaseException as e:
             try:
@@ -99,6 +101,10 @@ class InstantMongoDB:
             raise e
 
     def stop(self):
+        if self.client:
+            self.client.close()
+            self.client = None
+            self.testdb = None
         if self._mongod_process:
             if self._mongod_process.poll() is None:
                 self.logger.debug('Terminating MongoDB pid %s', self._mongod_process.pid)
@@ -140,3 +146,17 @@ class InstantMongoDB:
                     continue
                 self.logger.info('drop_everything: dropping collection %s.%s', dbname, collname)
                 self.client[dbname][collname].drop()
+
+@contextmanager
+def patch_pymongo_periodic_executor():
+    pex = pymongo.periodic_executor.PeriodicExecutor
+    original_run = pex._run
+    def patched_run(self):
+        self._interval = 0.05
+        self._min_interval = 0.05
+        return original_run(self)
+    pex._run = patched_run
+    try:
+        yield
+    finally:
+        pex._run = original_run

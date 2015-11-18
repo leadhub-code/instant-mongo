@@ -44,7 +44,7 @@ def wait_for_accepting_tcp_conns(port, ip='127.0.0.1', timeout=30):
                 raise WFATCTimeoutExpiredError(
                     'Timeout expired while waiting for acceptinh TCP connections on {}:{}'.format(
                         ip, port))
-            time.sleep(0.05)
+            time.sleep(0.01)
             continue
         else:
             c.close()
