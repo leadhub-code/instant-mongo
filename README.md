@@ -47,12 +47,15 @@ If you are using [pytest](http://pytest.org/) to run your test and would like to
 ```python
 # conftest.py
 
-@pytest.fixture
+from pytest import fixture, yield_fixture
+from instant_mongo import InstantMongoDB
+
+@fixture
 def mongodb(global_mongodb):
     global_mongodb.drop_everything()
     return global_mongodb.testdb
 
-@pytest.yield_fixture(scope='session')
+@yield_fixture(scope='session')
 def global_mongodb(tmpdir_factory):
     with InstantMongoDB(data_dir=tmpdir_factory.mktemp('instant-mongo-data')) as im:
         yield im
