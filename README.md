@@ -6,11 +6,19 @@ instant-mongo
 Installation
 ------------
 
+Install current version:
+
 ```sh
 $ pip install git+https://github.com/messa/instant-mongo
 ```
 
-Or add this to your `requirements.txt`:
+Install specific version:
+
+```sh
+$ pip install git+https://github.com/messa/instant-mongo.git@v0.0.2
+```
+
+Or add this line to your `requirements.txt`:
 
 ```
 git+https://github.com/messa/instant-mongo#egg=instant-mongo
