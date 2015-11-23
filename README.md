@@ -65,7 +65,7 @@ def mongodb(global_mongodb):
 
 @yield_fixture(scope='session')
 def global_mongodb(tmpdir_factory):
-    with InstantMongoDB(data_dir=tmpdir_factory.mktemp('instant-mongo-data')) as im:
+    with InstantMongoDB(data_dir=tmpdir_factory.mktemp('instant-mongo-data'), journal=False) as im:
         yield im
 
 # test_smoke.py

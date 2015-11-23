@@ -19,10 +19,17 @@ def test_run(tmpdir):
 
 
 def test_drop_everything(tmpdir):
-    im = InstantMongoDB(data_dir=tmpdir / 'data')
+    im = InstantMongoDB(data_dir=tmpdir / 'data', journal=False)
     with im:
         im.testdb.testcoll.insert({'foo': 'bar'})
         assert im.testdb.testcoll.count() == 1
         im.drop_everything()
         assert im.testdb.testcoll.count() == 0
 
+
+def test_disable_journal(tmpdir):
+    tmpdir = Path(str(tmpdir))
+    with InstantMongoDB(data_dir=tmpdir / 'data1', journal=True):
+        assert (tmpdir / 'data1/journal').is_dir()
+    with InstantMongoDB(data_dir=tmpdir / 'data2', journal=False):
+        assert (tmpdir / 'data2/journal').is_dir() == False

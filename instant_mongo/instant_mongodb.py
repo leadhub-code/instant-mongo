@@ -29,7 +29,7 @@ class InstantMongoDB:
     - im.drop_everything() drops all collections; intended for tests
     '''
 
-    def __init__(self, data_dir, port=None, bind_ip='127.0.0.1', wired_tiger=True, wired_tiger_zlib=False):
+    def __init__(self, data_dir, port=None, bind_ip='127.0.0.1', wired_tiger=True, wired_tiger_zlib=False, journal=True):
         self.logger = logger
         if isinstance(data_dir, Path):
             self.data_dir = data_dir
@@ -45,6 +45,7 @@ class InstantMongoDB:
         self.wired_tiger = wired_tiger
         self.wired_tiger_cache_size_gb = 1
         self.wired_tiger_zlib = wired_tiger_zlib
+        self.journal = journal
         self._mongod_process = None
         self._stdout_thread = None
         self._stderr_thread = None
@@ -79,6 +80,8 @@ class InstantMongoDB:
             cmd.extend(['--wiredTigerCacheSizeGB', str(self.wired_tiger_cache_size_gb)])
             if self.wired_tiger_zlib:
                 cmd.extend(['--wiredTigerCollectionBlockCompressor', 'zlib'])
+        if not self.journal:
+            cmd.append('--nojournal')
         self._mongod_process = subprocess.Popen(cmd,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
         try:
