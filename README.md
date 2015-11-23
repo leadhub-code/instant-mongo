@@ -15,7 +15,7 @@ $ pip install git+https://github.com/messa/instant-mongo
 Install specific version:
 
 ```sh
-$ pip install git+https://github.com/messa/instant-mongo.git@v0.0.3
+$ pip install git+https://github.com/messa/instant-mongo.git@v0.0.4
 ```
 
 Or add this line to your `requirements.txt`:
