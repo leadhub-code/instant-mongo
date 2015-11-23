@@ -25,4 +25,4 @@ def test_drop_everything(tmpdir):
         assert im.testdb.testcoll.count() == 1
         im.drop_everything()
         assert im.testdb.testcoll.count() == 0
-    assert 0
+
