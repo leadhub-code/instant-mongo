@@ -1,5 +1,6 @@
 from pathlib import Path
 import py.path
+from shutil import rmtree
 
 from instant_mongo import InstantMongoDB
 
@@ -10,7 +11,7 @@ def test_run(tmpdir):
     for data_dir in [dd, str(dd), Path(str(dd))]:
         print()
         print('data_dir: {!r}'.format(data_dir))
-        im = InstantMongoDB(data_dir=data_dir)
+        im = InstantMongoDB(data_dir=data_dir, journal=False)
         with im:
             im.testdb.testcoll.insert({'foo': 'bar'})
             doc, = im.testdb.testcoll.find()
@@ -33,3 +34,5 @@ def test_disable_journal(tmpdir):
         assert (tmpdir / 'data1/journal').is_dir()
     with InstantMongoDB(data_dir=tmpdir / 'data2', journal=False):
         assert (tmpdir / 'data2/journal').is_dir() == False
+    # cleanup
+    rmtree(str(tmpdir / 'data1/journal'))
