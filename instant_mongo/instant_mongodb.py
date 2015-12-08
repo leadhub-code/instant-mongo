@@ -95,6 +95,7 @@ class InstantMongoDB:
             with patch_pymongo_periodic_executor():
                 self.client = pymongo.MongoClient(self.mongodb_uri)
             self.testdb = self.client.test
+            # use any db you want, self.testdb is just a shortcut
         except BaseException as e:
             try:
                 self._mongod_process.terminate()
@@ -141,6 +142,9 @@ class InstantMongoDB:
         return t
 
     def drop_everything(self):
+        '''
+        Drop all collections in all databases (except the system ones)
+        '''
         for dbname in self.client.database_names():
             if dbname == 'local':
                 continue
@@ -152,6 +156,9 @@ class InstantMongoDB:
 
 @contextmanager
 def patch_pymongo_periodic_executor():
+    '''
+    Enables faster pymongo.MongoClient shutdown
+    '''
     pex = pymongo.periodic_executor.PeriodicExecutor
     original_run = pex._run
     def patched_run(self):
