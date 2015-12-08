@@ -27,7 +27,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'instant_mongo=instant_mongo:main',
+            'instant-mongo=instant_mongo:main',
         ],
     },
 )
