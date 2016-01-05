@@ -9,7 +9,7 @@ readme = (here / 'README.md').open(encoding='UTF-8').read()
 
 setup(
     name='instant-mongo',
-    version='0.1.1',
+    version='0.1.2',
     description='Launch Mongodb instance for dev and testing',
     long_description=readme,
     url='https://github.com/messa/instant-mongo',
