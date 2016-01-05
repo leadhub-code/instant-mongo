@@ -7,6 +7,7 @@ def is_tcp_port_free(port, ip='127.0.0.1'):
     s = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
     try:
         try:
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             s.bind((ip, port))
         except OSError as e:
             if e.errno in (98, 48):
@@ -52,4 +53,3 @@ def wait_for_accepting_tcp_conns(port, ip='127.0.0.1', timeout=30):
                 'Timeout expired while waiting for acceptinh TCP connections on {}:{}'.format(
                     ip, port))
         time.sleep(0.01)
-
