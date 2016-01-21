@@ -136,7 +136,7 @@ class InstantMongoDB:
                 line = stream.readline()
                 if not line:
                     break
-                self.logger.debug('%s %s: %s', pid, name, line.strip())
+                self.logger.debug('mongod[%s]: %s', pid, line.strip())
         t = threading.Thread(target=f)
         t.start()
         return t
