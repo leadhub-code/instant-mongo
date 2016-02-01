@@ -29,7 +29,7 @@ class InstantMongoDB:
     - im.drop_everything() drops all collections; intended for tests
     '''
 
-    def __init__(self, data_dir, port=None, bind_ip='127.0.0.1', wired_tiger=True, wired_tiger_zlib=False, journal=True):
+    def __init__(self, data_dir, port=None, bind_ip='127.0.0.1', wired_tiger=True, wired_tiger_zlib=True, journal=True):
         self.logger = logger
         if isinstance(data_dir, Path):
             self.data_dir = data_dir
@@ -74,6 +74,7 @@ class InstantMongoDB:
             '--bind_ip', self.bind_ip,
             '--nounixsocket',
             '--dbpath', str(self.data_dir),
+            '--directoryperdb',
             '--smallfiles']
         if self.wired_tiger:
             cmd.extend(['--storageEngine', 'wiredTiger'])
