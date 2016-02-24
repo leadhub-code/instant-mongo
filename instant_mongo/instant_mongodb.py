@@ -29,7 +29,7 @@ class InstantMongoDB:
     - im.drop_everything() drops all collections; intended for tests
     '''
 
-    def __init__(self, data_dir, port=None, bind_ip='127.0.0.1', wired_tiger=True, wired_tiger_zlib=True, journal=True):
+    def __init__(self, data_dir, port=None, bind_ip='127.0.0.1', wired_tiger=True, wired_tiger_zlib=True, journal=True, cache_size=1):
         self.logger = logger
         if isinstance(data_dir, Path):
             self.data_dir = data_dir
@@ -43,7 +43,7 @@ class InstantMongoDB:
         self.bind_ip = bind_ip
         self.mongod_cmd = 'mongod'
         self.wired_tiger = wired_tiger
-        self.wired_tiger_cache_size_gb = 1
+        self.cache_size = cache_size
         self.wired_tiger_zlib = wired_tiger_zlib
         self.journal = journal
         self._mongod_process = None
@@ -78,7 +78,7 @@ class InstantMongoDB:
             '--smallfiles']
         if self.wired_tiger:
             cmd.extend(['--storageEngine', 'wiredTiger'])
-            cmd.extend(['--wiredTigerCacheSizeGB', str(self.wired_tiger_cache_size_gb)])
+            cmd.extend(['--wiredTigerCacheSizeGB', str(self.cache_size)])
             if self.wired_tiger_zlib:
                 cmd.extend(['--wiredTigerCollectionBlockCompressor', 'zlib'])
         if not self.journal:
@@ -154,6 +154,7 @@ class InstantMongoDB:
                     continue
                 self.logger.info('drop_everything: dropping collection %s.%s', dbname, collname)
                 self.client[dbname][collname].drop()
+
 
 @contextmanager
 def patch_pymongo_periodic_executor():
