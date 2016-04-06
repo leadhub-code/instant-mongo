@@ -15,7 +15,7 @@ $ pip install git+https://github.com/messa/instant-mongo
 Install specific version:
 
 ```sh
-$ pip install git+https://github.com/messa/instant-mongo.git@v0.1.5
+$ pip install git+https://github.com/messa/instant-mongo.git@v0.1.6
 ```
 
 Or add this line to your `requirements.txt`:
@@ -31,8 +31,8 @@ Usage
 ```python
 from instant_mongo import InstantMongoDB
 with InstantMongoDB(data_dir=tmpdir / 'data') as im:
-    im.testdb.testcoll.insert({'foo': 'bar'})
-    doc, = im.testdb.testcoll.find()
+    im.db.testcoll.insert({'foo': 'bar'})
+    doc, = im.db.testcoll.find()
     assert doc['foo'] == 'bar'
 ```
 
@@ -40,7 +40,7 @@ Available attributes and methods:
 
 - `im.mongodb_uri` is `'mongodb://127.0.0.1:{port}'`
 - `im.client` is `pymongo.MongoClient(im.mongodb_uri)`
-- `im.testdb` is `im.client.testdb`
+- `im.db` is `im.client.test`
 - `im.drop_everything()` drops all collections; intended for tests
 
 If you run MongoDB in `/tmp` and you have your `/tmp` on ramdisk (tmpfs) then it's super fast. I'm recommending this setup for your tests.
@@ -61,7 +61,7 @@ from instant_mongo import InstantMongoDB
 @fixture
 def mongodb(global_mongodb):
     global_mongodb.drop_everything()
-    return global_mongodb.testdb
+    return global_mongodb.db
 
 @yield_fixture(scope='session')
 def global_mongodb(tmpdir_factory):

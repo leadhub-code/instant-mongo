@@ -17,7 +17,7 @@ class InstantMongoDB:
     Usage:
 
     with InstantMongoDB(data_dir='/tmp/data') as im:
-        print(im.testdb.collection_names())
+        print(im.db.collection_names())
 
     The database is automatically stopped at the end of the with-block.
 
@@ -25,7 +25,7 @@ class InstantMongoDB:
 
     - im.mongodb_uri is 'mongodb://127.0.0.1:{port}'
     - im.client is pymongo.MongoClient(im.mongodb_uri)
-    - im.testdb is im.client.testdb
+    - im.db is im.client.test
     - im.drop_everything() drops all collections; intended for tests
     '''
 
@@ -95,8 +95,9 @@ class InstantMongoDB:
             self.mongodb_uri = 'mongodb://127.0.0.1:{port}'.format(port=self.port)
             with patch_pymongo_periodic_executor():
                 self.client = pymongo.MongoClient(self.mongodb_uri)
-            self.testdb = self.client.test
-            # use any db you want, self.testdb is just a shortcut
+            self.db = self.client.test
+            self.testdb = self.db # backward compatibility
+            # use any db you want, self.db is just a shortcut
         except BaseException as e:
             try:
                 self._mongod_process.terminate()
@@ -109,6 +110,7 @@ class InstantMongoDB:
         if self.client:
             self.client.close()
             self.client = None
+            self.db = None
             self.testdb = None
         if self._mongod_process:
             if self._mongod_process.poll() is None:

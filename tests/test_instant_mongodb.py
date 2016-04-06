@@ -13,19 +13,19 @@ def test_run(tmpdir):
         print('data_dir: {!r}'.format(data_dir))
         im = InstantMongoDB(data_dir=data_dir, journal=False)
         with im:
-            im.testdb.testcoll.insert({'foo': 'bar'})
-            doc, = im.testdb.testcoll.find()
+            im.db.testcoll.insert({'foo': 'bar'})
+            doc, = im.db.testcoll.find()
             assert doc['foo'] == 'bar'
-            im.testdb.testcoll.drop()
+            im.db.testcoll.drop()
 
 
 def test_drop_everything(tmpdir):
     im = InstantMongoDB(data_dir=tmpdir / 'data', journal=False)
     with im:
-        im.testdb.testcoll.insert({'foo': 'bar'})
-        assert im.testdb.testcoll.count() == 1
+        im.db.testcoll.insert({'foo': 'bar'})
+        assert im.db.testcoll.count() == 1
         im.drop_everything()
-        assert im.testdb.testcoll.count() == 0
+        assert im.db.testcoll.count() == 0
 
 
 def test_disable_journal(tmpdir):
@@ -36,3 +36,10 @@ def test_disable_journal(tmpdir):
         assert (tmpdir / 'data2/journal').is_dir() == False
     # cleanup
     rmtree(str(tmpdir / 'data1/journal'))
+
+
+def test_testdb_backward_compatibility(tmpdir):
+    im = InstantMongoDB(data_dir=tmpdir / 'data', journal=False)
+    with im:
+        assert im.testdb is im.db
+
