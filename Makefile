@@ -1,15 +1,21 @@
+python3=python3
+venv_dir=local/venv
+pytest_args=-v
 
-check:
-	make check34
+check: $(venv_dir)/packages-installed
+	PYTHONDONTWRITEBYTECODE=1 \
+		$(venv_dir)/bin/pytest $(pytest_args) tests
 
-check34: local/venv34
-	PYTHONDONTWRITEBYTECODE=1 local/venv34/bin/py.test -v tests
+venv: $(venv_dir)/packages-installed
 
-local/venv34: setup.py Makefile
-	test -d local/venv34 || pyvenv-3.4 local/venv34
-	local/venv34/bin/pip install -U pip
-	local/venv34/bin/pip install -U pytest
-	local/venv34/bin/pip install -U -e .
-	touch local/venv34
+$(venv_dir)/packages-installed: setup.py
+	test -d $(venv_dir) || $(python3) -m venv $(venv_dir)
+	$(venv_dir)/bin/pip install -U pip wheel
+	$(venv_dir)/bin/pip install -e .
+	$(venv_dir)/bin/pip install -e .[test]
+	touch $@
 
-.PHONY: check check34
+check-py3.6:
+	make check python3=python3.6 venv_dir=$(venv_dir)-py3.6
+
+.PHONY: venv
