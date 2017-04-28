@@ -68,7 +68,7 @@ class InstantMongoDB:
             if not self.port:
                 self._port_guard = PortGuard()
                 self.port = self._port_guard.get_available_port()
-            self.data_dir.mkdir()
+            self.data_dir.mkdir(parents=True)
             self._mongodb_process = MongoDBProcess(
                 logger=self.logger,
                 data_dir=self.data_dir,
