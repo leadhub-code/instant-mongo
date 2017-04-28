@@ -39,6 +39,7 @@ class InstantMongoDB:
         self.mongo_uri = None
         self._port_guard = None
         self._temp_dir = None
+        self._mongodb_process = None
 
         # figure out self.data_dir
         if data_dir:
