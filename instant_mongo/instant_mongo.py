@@ -33,9 +33,9 @@ class InstantMongoDB:
 
     wait_timeout = 10
 
-    def __init__(self, data_parent_dir=None, data_dir=None):
+    def __init__(self, data_parent_dir=None, data_dir=None, port=None):
         self.logger = logger
-        self.port = None
+        self.port = port
         self.mongo_uri = None
         self._port_guard = None
         self._temp_dir = None
