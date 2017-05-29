@@ -15,7 +15,7 @@ def skip_if_no_mongod():
 def test_example(tmpdir):
     skip_if_no_mongod()
     with InstantMongoDB(tmpdir) as im:
-        im.db.testcoll.insert({'foo': 'bar'})
+        im.db.testcoll.insert_one({'foo': 'bar'})
         doc, = im.db.testcoll.find()
         assert doc['foo'] == 'bar'
         assert 'testcoll' in im.db.collection_names()
@@ -39,7 +39,7 @@ def test_get_new_test_db(tmpdir):
 def test_drop_everything(tmpdir):
     skip_if_no_mongod()
     with InstantMongoDB(tmpdir) as im:
-        im.db['testcoll'].insert({'foo': 'bar'})
+        im.db['testcoll'].insert_one({'foo': 'bar'})
         assert 'testcoll' in im.db.collection_names()
         assert im.db['testcoll'].count() == 1
         im.drop_everything()
