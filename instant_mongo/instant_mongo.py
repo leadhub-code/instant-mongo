@@ -33,12 +33,13 @@ class InstantMongoDB:
 
     wait_timeout = 10
 
-    def __init__(self, data_parent_dir=None, data_dir=None):
+    def __init__(self, data_parent_dir=None, data_dir=None, port=None):
         self.logger = logger
-        self.port = None
+        self.port = port
         self.mongo_uri = None
         self._port_guard = None
         self._temp_dir = None
+        self._mongodb_process = None
 
         # figure out self.data_dir
         if data_dir:
@@ -67,7 +68,7 @@ class InstantMongoDB:
             if not self.port:
                 self._port_guard = PortGuard()
                 self.port = self._port_guard.get_available_port()
-            self.data_dir.mkdir()
+            self.data_dir.mkdir(parents=True)
             self._mongodb_process = MongoDBProcess(
                 logger=self.logger,
                 data_dir=self.data_dir,
