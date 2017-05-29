@@ -201,6 +201,7 @@ class OutputReader:
             line = self.stream.readline()
             if not line:
                 self.logger.debug('%s closed', self.name)
+                self.stream.close()
                 break
             try:
                 line = line.decode()
