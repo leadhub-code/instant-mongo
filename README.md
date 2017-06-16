@@ -61,7 +61,7 @@ from instant_mongo import InstantMongoDB
 
 @fixture
 def mongodb(global_mongodb):
-    return global_mongo.get_new_test_db()
+    return global_mongodb.get_new_test_db()
 
 @yield_fixture(scope='session')
 def global_mongodb(tmpdir_factory):
