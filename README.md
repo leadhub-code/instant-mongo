@@ -78,3 +78,13 @@ def test_mongodb_works(mongodb):
 ```
 
 This is compatible with parallel test running via pytest-xdist.
+
+
+Similar projects
+----------------
+
+(more or less}
+
+- [github.com/AMCN41R/harness](https://github.com/AMCN41R/harness) - MongoDB Integration Test Framework, C#
+
+
