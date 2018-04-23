@@ -18,13 +18,15 @@ $ pip install git+https://github.com/leadhub-code/instant-mongo
 Install specific version:
 
 ```sh
+$ pip install https://github.com/leadhub-code/instant-mongo/archive/v1.0.1.zip
+# or
 $ pip install git+https://github.com/leadhub-code/instant-mongo.git@v1.0.1
 ```
 
 Or add this line to your `requirements.txt`:
 
 ```
-git+https://github.com/leadhub-code/instant-mongo@v1.0.1#egg=instant-mongo==1.0.1
+https://github.com/leadhub-code/instant-mongo/archive/v1.0.1.zip#egg=instant-mongo==1.0.1
 ```
 
 
@@ -83,8 +85,8 @@ This is compatible with parallel test running via pytest-xdist.
 Similar projects
 ----------------
 
-(more or less}
+Projects helping with testing of MongoDB-based applications:
 
+- [github.com/fakemongo/fongo](https://github.com/fakemongo/fongo) - In-memory java implementation of MongoDB
 - [github.com/AMCN41R/harness](https://github.com/AMCN41R/harness) - MongoDB Integration Test Framework, C#
-
 
