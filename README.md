@@ -18,15 +18,15 @@ $ pip install git+https://github.com/leadhub-code/instant-mongo
 Install specific version:
 
 ```sh
-$ pip install https://github.com/leadhub-code/instant-mongo/archive/v1.0.1.zip
+$ pip install https://github.com/leadhub-code/instant-mongo/archive/v1.0.2.zip
 # or
-$ pip install git+https://github.com/leadhub-code/instant-mongo.git@v1.0.1
+$ pip install git+https://github.com/leadhub-code/instant-mongo.git@v1.0.2
 ```
 
 Or add this line to your `requirements.txt`:
 
 ```
-https://github.com/leadhub-code/instant-mongo/archive/v1.0.1.zip#egg=instant-mongo==1.0.1
+https://github.com/leadhub-code/instant-mongo/archive/v1.0.2.zip#egg=instant-mongo==1.0.2
 ```
 
 

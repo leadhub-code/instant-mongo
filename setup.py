@@ -12,7 +12,7 @@ with (here / 'README.md').open() as f:
 
 setup(
     name='instant-mongo',
-    version='1.0.1',
+    version='1.0.2',
     description='MongoDB runner for integration (and other) tests',
     long_description=readme,
     url='https://github.com/messa/instant-mongo',
