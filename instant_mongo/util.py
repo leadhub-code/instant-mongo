@@ -1,5 +1,6 @@
 from contextlib import contextmanager
 from pathlib import Path
+import pymongo
 
 
 def to_path(p):
@@ -9,15 +10,36 @@ def to_path(p):
         return Path(str(p))
 
 
+def list_database_names(client):
+    if pymongo.version_tuple >= (3, 6):
+        return client.list_database_names()
+    else:
+        return client.database_names()
+
+
+def list_collection_names(db):
+    if pymongo.version_tuple >= (3, 6):
+        return db.list_collection_names()
+    else:
+        return db.collection_names()
+
+
+def count_documents(collection, filter=None, **kwargs):
+    if pymongo.version_tuple >= (3, 7):
+        return collection.count_documents(filter or {}, **kwargs)
+    else:
+        return collection.count(filter, **kwargs)
+
+
 def drop_all_dbs(client):
-    for db_name in sorted(client.database_names()):
+    for db_name in sorted(list_database_names(client)):
         if db_name == 'local':
             continue
         drop_all_collections(client[db_name])
 
 
 def drop_all_collections(db):
-    for c_name in sorted(db.collection_names()):
+    for c_name in sorted(list_collection_names(db)):
         if c_name.startswith('system.'):
             continue
         db[c_name].drop()
