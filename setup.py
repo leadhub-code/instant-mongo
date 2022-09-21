@@ -5,16 +5,11 @@ from setuptools import setup, find_packages
 
 here = Path(__file__).parent
 
-
-with (here / 'README.md').open() as f:
-    readme = f.read()
-
-
 setup(
     name='instant-mongo',
     version='1.0.2',
     description='MongoDB runner for integration (and other) tests',
-    long_description=readme,
+    long_description=(here / 'README.md').read_text(),
     url='https://github.com/messa/instant-mongo',
     author='Petr Messner',
     author_email='petr.messner@gmail.com',
@@ -24,9 +19,10 @@ setup(
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
     ],
     keywords='instant MongoDB testing',
     packages=find_packages(exclude=['doc', 'tests']),
