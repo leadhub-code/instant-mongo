@@ -1,5 +1,5 @@
 python3=python3
-venv_dir=local/venv
+venv_dir=venv
 pytest_args=-v
 
 check: $(venv_dir)/packages-installed
