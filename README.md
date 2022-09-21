@@ -58,14 +58,14 @@ If you are using [pytest](http://pytest.org/) to run your test and would like to
 ```python
 # conftest.py
 
-from pytest import fixture, yield_fixture
+from pytest import fixture
 from instant_mongo import InstantMongoDB
 
 @fixture
 def mongodb(global_mongodb):
     return global_mongodb.get_new_test_db()
 
-@yield_fixture(scope='session')
+@fixture(scope='session')
 def global_mongodb(tmpdir_factory):
     temp_dir = tmpdir_factory.mktemp('instant-mongo')
     with InstantMongoDB(data_parent_dir=temp_dir) as im:
@@ -89,4 +89,3 @@ Projects helping with testing of MongoDB-based applications:
 
 - [github.com/fakemongo/fongo](https://github.com/fakemongo/fongo) - In-memory java implementation of MongoDB
 - [github.com/AMCN41R/harness](https://github.com/AMCN41R/harness) - MongoDB Integration Test Framework, C#
-
