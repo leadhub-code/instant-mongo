@@ -104,13 +104,13 @@ class InstantMongoDB:
     @property
     def client(self):
         if not self._client:
-            self._client = self._create_client()
+            self._client = self.get_client()
         return self._client
 
-    def _create_client(self):
-        import pymongo
+    def get_client(self, **kwargs):
+        from pymongo import MongoClient
         with patch_pymongo_periodic_executor():
-            return pymongo.MongoClient(self.mongo_uri)
+            return MongoClient(self.mongo_uri, **kwargs)
 
     @property
     def db(self):
