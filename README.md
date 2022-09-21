@@ -1,8 +1,6 @@
 instant-mongo: MongoDB runner for your tests
 ============================================
 
-[![Build Status](https://travis-ci.org/leadhub-code/instant-mongo.svg?branch=master)](https://travis-ci.org/leadhub-code/instant-mongo)
-
 Run MongoDB easily in your integration tests or other code that depends on a temporary MongoDB server.
 
 
