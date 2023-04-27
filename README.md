@@ -10,7 +10,7 @@ Installation
 Install current version:
 
 ```sh
-$ pip install git+https://github.com/leadhub-code/instant-mongo
+$ pip install https://github.com/leadhub-code/instant-mongo/archive/master.zip
 ```
 
 Install specific version:
@@ -24,7 +24,7 @@ $ pip install git+https://github.com/leadhub-code/instant-mongo.git@v1.0.3
 Or add this line to your `requirements.txt`:
 
 ```
-https://github.com/leadhub-code/instant-mongo/archive/v1.0.3.zip#egg=instant-mongo==1.0.3
+instant-mongo @ https://github.com/leadhub-code/instant-mongo/archive/v1.0.3.zip
 ```
 
 
