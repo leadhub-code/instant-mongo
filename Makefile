@@ -6,6 +6,10 @@ check: $(venv_dir)/packages-installed
 	PYTHONDONTWRITEBYTECODE=1 \
 		$(venv_dir)/bin/pytest $(pytest_args) tests
 
+lint: $(venv_dir)/packages-installed
+	test -x $(venv_dir)/bin/flake8 || $(venv_dir)/bin/pip install flake8
+	$(venv_dir)/bin/flake8 . --show-source --statistics
+
 venv: $(venv_dir)/packages-installed
 
 $(venv_dir)/packages-installed: setup.py

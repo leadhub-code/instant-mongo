@@ -1,10 +1,9 @@
 import logging
 from os import getpid
-from pathlib import Path
 import re
 import subprocess
 import threading
-from time import monotonic, time, sleep
+from time import time, sleep
 
 from .port_guard import PortGuard
 from .util import patch_pymongo_periodic_executor, drop_all_dbs
@@ -82,7 +81,6 @@ class InstantMongoDB:
             raise e
 
     def _wait_for_accepting_tcp_conns(self):
-        t0 = monotonic()
         while True:
             if not self._mongodb_process.is_alive():
                 raise Exception('MongoDB process exited before it started to accept connections')
@@ -205,7 +203,7 @@ class OutputReader:
                 break
             try:
                 line = line.decode()
-            except Exception as e:
+            except Exception:
                 line = str(line)
             try:
                 line = self._preprocess_line(line)

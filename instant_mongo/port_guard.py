@@ -27,7 +27,7 @@ class PortGuard:
                 s_app.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 s_app.bind(('127.0.0.1', app_port))
                 s_app.listen(1)
-            except Exception as e:
+            except Exception:
                 if s_guard:
                     s_guard.close()
                 if s_app:

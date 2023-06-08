@@ -6,7 +6,7 @@ import pymongo
 def to_path(p):
     try:
         return Path(p)
-    except Exception as e:
+    except Exception:
         return Path(str(p))
 
 
@@ -53,12 +53,14 @@ def patch_pymongo_periodic_executor():
     import pymongo
     pex = pymongo.periodic_executor.PeriodicExecutor
     original_run = pex._run
+
     def patched_run(self):
         assert self._interval
         assert self._min_interval
         self._interval = 0.05
         self._min_interval = 0.05
         return original_run(self)
+
     pex._run = patched_run
     try:
         yield
