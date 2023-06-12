@@ -55,9 +55,7 @@ def patch_pymongo_periodic_executor():
     original_run = pex._run
 
     def patched_run(self):
-        assert self._interval
         assert self._min_interval
-        self._interval = 0.02
         self._min_interval = 0.02
         return original_run(self)
 
@@ -65,7 +63,15 @@ def patch_pymongo_periodic_executor():
     try:
         yield
     finally:
-        pex._run = original_run
+        #pex._run = original_run
+        # Looks like recent versions of PyMongo have multiple places where
+        # PeriodicExecutor is instantiated, sometimes long after MongoClient
+        # __init__ is finished.
+        # The easiest solution is to just keep the patch in place for the rest
+        # of the process lifetime.
+        # It is expected that this library (instant-mongo) is used for testing
+        # or development purposes anyway, and unlikely to be used in production.
+        pass
 
 
 def tcp_conns_accepted_on_port(port, host='127.0.0.1'):
