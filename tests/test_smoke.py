@@ -1,3 +1,4 @@
+import os
 import pymongo
 from pytest import skip
 import subprocess
@@ -10,7 +11,10 @@ def skip_if_no_mongod():
     try:
         subprocess.check_call(['mongod', '--version'])
     except FileNotFoundError:
-        skip('mongod not found')
+        if os.environ.get('CI'):
+            raise Exception('mongod not found - need to be installed in a CI environment')
+        else:
+            skip('mongod not found')
 
 
 def test_example(tmpdir):
