@@ -7,7 +7,7 @@ here = Path(__file__).parent
 
 setup(
     name='instant-mongo',
-    version='1.0.3',
+    version='1.0.4',
     description='MongoDB runner for integration (and other) tests',
     long_description=(here / 'README.md').read_text(),
     url='https://github.com/messa/instant-mongo',
