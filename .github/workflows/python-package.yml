@@ -12,21 +12,60 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.7', '3.9', '3.11']
+        mongodb-version: ['6.0']
+        pymongo-version: ['4.3.3', '3.13.0']
+
+        # More about the Python versions:
+        #   3.11 - latest stable Python version
+        #   3.9 - Python version in Debian 11
+        #   3.7 - Python version in Debian 10
+
+        # Only MongoDB 6.0 seems to be available for Ubuntu Jammy.
 
     steps:
     - uses: actions/checkout@v3
+
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Install dependencies
+    - name: Install MongoDB
       run: |
-        python3 -m pip install --upgrade pip
-        python3 -m pip install flake8 pytest
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        set -ex
+        curl -fsSL https://pgp.mongodb.com/server-${{ matrix.mongodb-version }}.asc \
+          | sudo gpg -o /usr/share/keyrings/mongodb-server.gpg --dearmor
+        echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server.gpg ]" \
+          "https://repo.mongodb.org/apt/ubuntu " \
+          "`lsb_release --short --codename`/mongodb-org/${{ matrix.mongodb-version }} " \
+          "multiverse" \
+          | sudo tee /etc/apt/sources.list.d/mongodb-org.list
+        sudo apt-get update
+        sudo apt-get install -y mongodb-org-server
+        dpkg -l | grep -i mongo
+        dpkg -L mongodb-org-server
+
+    - name: Install the package
+      run: |
+        python3 -m pip install pymongo==${{ matrix.pymongo-version }}
         python3 -m pip install .
+
+    - name: Install pytest
+      run: |
+        python3 -m pip install pytest
+
+    - name: Show package versions
+      run: |
+        python3 -m pip freeze
+
+    - name: Test with pytest
+      run: |
+        python3 -m pytest -v --tb=native tests
+
+    - name: Install flake8
+      run: |
+        python3 -m pip install flake8
 
     - name: Lint with flake8
       run: |
@@ -34,7 +73,3 @@ jobs:
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --statistics
-
-    - name: Test with pytest
-      run: |
-        python3 -m pytest -v --tb=native tests
