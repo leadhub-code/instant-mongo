@@ -57,8 +57,8 @@ def patch_pymongo_periodic_executor():
     def patched_run(self):
         assert self._interval
         assert self._min_interval
-        self._interval = 0.05
-        self._min_interval = 0.05
+        self._interval = 0.02
+        self._min_interval = 0.02
         return original_run(self)
 
     pex._run = patched_run
