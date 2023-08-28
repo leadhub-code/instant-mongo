@@ -56,24 +56,31 @@ If you are using [pytest](http://pytest.org/) to run your test and would like to
 ```python
 # conftest.py
 
+from bson import ObjectId
 from pytest import fixture
 from instant_mongo import InstantMongoDB
 
-@fixture
-def mongodb(global_mongodb):
-    return global_mongodb.get_new_test_db()
-
 @fixture(scope='session')
-def global_mongodb(tmpdir_factory):
-    temp_dir = tmpdir_factory.mktemp('instant-mongo')
-    with InstantMongoDB(data_parent_dir=temp_dir) as im:
-        yield im
+def mongo_client(tmpdir_factory):
+    if os.environ.get('TEST_MONGO_PORT'):
+        # use already running MongoDB instance
+        yield MongoClient(port=int(os.environ['TEST_MONGO_PORT']))
+    else:
+        # run temporary MongoDB instance using instant-mongo
+        temp_dir = tmpdir_factory.mktemp('instant-mongo')
+        with InstantMongoDB(data_parent_dir=temp_dir) as im:
+            yield im.get_client()
+
+@fixture
+def db(mongo_client):
+    db_name = f'test_{ObjectId()}'
+    yield mongo_client[db_name]
 
 # test_smoke.py
 
-def test_mongodb_works(mongodb):
-    mongodb.testcoll.insert({'foo': 'bar'})
-    doc, = mongodb.testcoll.find()
+def test_mongodb_works(db):
+    db['testcoll'].insert({'foo': 'bar'})
+    doc, = db['testcoll'].find()
     assert doc['foo'] == 'bar'
 ```
 
