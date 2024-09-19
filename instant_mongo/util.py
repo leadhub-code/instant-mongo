@@ -51,15 +51,21 @@ def patch_pymongo_periodic_executor():
     Enables faster pymongo.MongoClient shutdown
     '''
     import pymongo
-    pex = pymongo.periodic_executor.PeriodicExecutor
-    original_run = pex._run
+    try:
+        pex = pymongo.periodic_executor.PeriodicExecutor
+    except AttributeError:
+        # Hotfix for pymongo 4.9.1
+        pass
+    else:
+        original_run = pex._run
 
-    def patched_run(self):
-        assert self._min_interval
-        self._min_interval = 0.02
-        return original_run(self)
+        def patched_run(self):
+            assert self._min_interval
+            self._min_interval = 0.02
+            return original_run(self)
 
-    pex._run = patched_run
+        pex._run = patched_run
+
     try:
         yield
     finally:
