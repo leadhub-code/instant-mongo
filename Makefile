@@ -12,7 +12,7 @@ lint: $(venv_dir)/packages-installed
 
 venv: $(venv_dir)/packages-installed
 
-$(venv_dir)/packages-installed: setup.py
+$(venv_dir)/packages-installed: pyproject.toml
 	test -d $(venv_dir) || $(python3) -m venv $(venv_dir)
 	$(venv_dir)/bin/pip install -U pip wheel
 	$(venv_dir)/bin/pip install -e .
