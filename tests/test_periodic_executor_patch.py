@@ -7,6 +7,8 @@ This file tests whether the patch works as expected.
 
 from subprocess import check_call
 from logging import getLogger
+import pymongo
+from pytest import skip
 import sys
 from textwrap import dedent
 from time import time
@@ -18,6 +20,8 @@ logger = getLogger(__name__)
 
 
 def test_instant_mongo_duration(tmp_path):
+    if pymongo.version_tuple > (4, 9):
+        skip('the patch is disabled for pymongo >= 4.9.x')
     (tmp_path / 'test_script.py').write_text(test_script)
     # Looks like we need to run the test code in an entirely separate process.
     # Python module multiprocessing doesn't isolate enough apparently.
