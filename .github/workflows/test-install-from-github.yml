@@ -1,0 +1,65 @@
+name: Install from Github
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.7', '3.9', '3.11', '3.12']
+        mongodb-version: ['7.0']
+
+    steps:
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install the package
+      run: |
+        python3 -m pip install https://github.com/leadhub-code/instant-mongo/archive/master.zip
+
+    - name: Show package versions
+      run: |
+        python3 -m pip freeze
+
+    - name: Check
+      run: |
+        python3 -c 'import instant_mongo; print("ok")'
+
+    - name: Install MongoDB
+      run: |
+        set -ex
+        curl -fsSL https://pgp.mongodb.com/server-${{ matrix.mongodb-version }}.asc \
+          | sudo gpg -o /usr/share/keyrings/mongodb-server.gpg --dearmor
+        echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server.gpg ]" \
+          "https://repo.mongodb.org/apt/ubuntu " \
+          "`lsb_release --short --codename`/mongodb-org/${{ matrix.mongodb-version }} " \
+          "multiverse" \
+          | sudo tee /etc/apt/sources.list.d/mongodb-org.list
+        sudo apt-get update
+        sudo apt-get install -y mongodb-org-server
+        dpkg -l | grep -i mongo
+        dpkg -L mongodb-org-server
+
+    - name: Prepare example.py
+      run: |
+        cat > example.py <<EOD
+        from instant_mongo import InstantMongoDB
+        with InstantMongoDB() as im:
+            im.db.testcoll.insert({'foo': 'bar'})
+            doc, = im.db.testcoll.find()
+            assert doc['foo'] == 'bar'
+        print("Example ok!")
+        EOD
+
+    - name: Run example.py
+      run: |
+        time python3 example.py

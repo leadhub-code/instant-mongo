@@ -28,6 +28,7 @@ jobs:
           - { pymongo-version: '4.9.1', python-version: '3.7' }
 
     steps:
+
     - uses: actions/checkout@v4
 
     - name: Set up Python ${{ matrix.python-version }}
