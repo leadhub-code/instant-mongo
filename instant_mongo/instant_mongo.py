@@ -150,7 +150,6 @@ class MongoDBProcess:
                 '--directoryperdb',
                 '--storageEngine', 'wiredTiger',
                 '--wiredTigerCacheSizeGB', '1',
-                '--nojournal',
             ]
             self._mongod_process = subprocess.Popen(
                 cmd,
