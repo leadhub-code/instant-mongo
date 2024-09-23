@@ -34,8 +34,8 @@ Usage
 ```python
 from instant_mongo import InstantMongoDB
 with InstantMongoDB() as im:
-    im.db.testcoll.insert({'foo': 'bar'})
-    doc, = im.db.testcoll.find()
+    im.db['testcoll'].insert_one({'foo': 'bar'})
+    doc, = im.db['testcoll'].find()
     assert doc['foo'] == 'bar'
 ```
 
