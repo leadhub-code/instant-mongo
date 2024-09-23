@@ -18,10 +18,14 @@ jobs:
 
         # More about the Python versions:
         #   3.12 - latest stable Python version
+        #   3.11 - Python version in Debian 12
         #   3.9 - Python version in Debian 11
         #   3.7 - Python version in Debian 10
 
         # Only MongoDB 6.0 seems to be available for Ubuntu Jammy.
+
+        exclude:
+          - { pymongo-version: '4.9.1', python-version: '3.7' }
 
     steps:
     - uses: actions/checkout@v3
