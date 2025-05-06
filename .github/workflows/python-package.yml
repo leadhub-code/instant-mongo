@@ -8,18 +8,23 @@ on: [push, pull_request]
 jobs:
   build:
 
-    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.9', '3.11', '3.12', '3.13']
-        mongodb-version: ['6.0', '7.0']
-        pymongo-version: ['4.12.1', '4.6.1', '3.13.0']
+        include:
+          - { os: ubuntu-latest, python-version: '3.13', mongodb-version: '8.0', pymongo-version: '4.12.1' }
+          - { os: ubuntu-22.04,  python-version: '3.12', mongodb-version: '8.0', pymongo-version: '4.12.1' }
+          - { os: ubuntu-22.04,  python-version: '3.11', mongodb-version: '7.0', pymongo-version: '4.12.1' }
+          - { os: ubuntu-22.04,  python-version: '3.9',  mongodb-version: '6.0', pymongo-version: '4.12.1' }
+          - { os: ubuntu-22.04,  python-version: '3.9',  mongodb-version: '6.0', pymongo-version: '4.6.1'  }
+          - { os: ubuntu-22.04,  python-version: '3.9',  mongodb-version: '6.0', pymongo-version: '3.13.0' }
 
         # More about the Python versions:
         #   3.13 - latest stable Python version
         #   3.11 - Python version in Debian 12
         #   3.9 - Python version in Debian 11
+
+    runs-on: ${{ matrix.os }}
 
     steps:
 
@@ -33,13 +38,14 @@ jobs:
     - name: Install MongoDB
       run: |
         set -ex
-        curl -fsSL https://pgp.mongodb.com/server-${{ matrix.mongodb-version }}.asc \
-          | sudo gpg -o /usr/share/keyrings/mongodb-server.gpg --dearmor
-        echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server.gpg ]" \
-          "https://repo.mongodb.org/apt/ubuntu " \
-          "`lsb_release --short --codename`/mongodb-org/${{ matrix.mongodb-version }} " \
+        cat /etc/lsb-release
+        curl -fsSL https://www.mongodb.org/static/pgp/server-${{ matrix.mongodb-version }}.asc \
+          -o /usr/share/keyrings/mongodb-server.asc
+        echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server.asc ]" \
+          "https://repo.mongodb.org/apt/ubuntu" \
+          "$(lsb_release --short --codename)/mongodb-org/${{ matrix.mongodb-version }}" \
           "multiverse" \
-          | sudo tee /etc/apt/sources.list.d/mongodb-org.list
+          | sudo tee /etc/apt/sources.list.d/mongodb.list
         sudo apt-get update
         sudo apt-get install -y mongodb-org-server
         dpkg -l | grep -i mongo
@@ -60,7 +66,8 @@ jobs:
 
     - name: Test with pytest
       run: |
-        python3 -m pytest -v --tb=native tests
+        mkdir test-results
+        python3 -m pytest -v --tb=native --junitxml=test-results/junit.xml tests
 
     - name: Install flake8
       run: |
