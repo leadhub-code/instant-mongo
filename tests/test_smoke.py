@@ -1,5 +1,6 @@
 import os
 import pymongo.errors
+from pymongo import version as pymongo_version
 from pytest import skip, raises
 import subprocess
 
@@ -65,11 +66,16 @@ def test_as_replica_set(tmpdir):
 
 def test_transactions(tmpdir):
     skip_if_no_mongod()
+    try:
+        with InstantMongoDB(tmpdir, as_replica_set=True) as im:
+            with im.client.start_session() as session:
+                with session.start_transaction():
+                    im.db['test'].insert_one({'test': 1}, session=session)
+                    im.db['test'].insert_one({'test': 1}, session=session)
 
-    with InstantMongoDB(tmpdir, as_replica_set=True) as im:
-        with im.client.start_session() as session:
-            with session.start_transaction():
-                im.db['test'].insert_one({'test': 1}, session=session)
-                im.db['test'].insert_one({'test': 1}, session=session)
-
-        assert im.db['test'].count_documents({}) == 2
+            assert im.db['test'].count_documents({}) == 2
+    except pymongo.errors.NotPrimaryError as e:
+        if pymongo_version.startswith('3.'):
+            skip('Fails with NotPrimaryError on pymongo 3.*')
+        else:
+            raise e
