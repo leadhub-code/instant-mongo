@@ -63,13 +63,35 @@ def test_as_replica_set(tmpdir):
         assert status['myState'] == 1
 
 
+def test_as_replica_set_is_writable(tmpdir):
+    with InstantMongoDB(tmpdir, as_replica_set=True) as im:
+        im.db['test'].insert_one({'test': 1})
+        assert im.db['test'].count_documents({}) == 1
+
+
+def test_as_replica_set_is_writable_read_first(tmpdir):
+    with InstantMongoDB(tmpdir, as_replica_set=True) as im:
+        assert im.db['test'].count_documents({}) == 0
+        im.db['test'].insert_one({'test': 1})
+        assert im.db['test'].count_documents({}) == 1
+
+
 def test_transactions(tmpdir):
     skip_if_no_mongod()
-
     with InstantMongoDB(tmpdir, as_replica_set=True) as im:
         with im.client.start_session() as session:
             with session.start_transaction():
                 im.db['test'].insert_one({'test': 1}, session=session)
                 im.db['test'].insert_one({'test': 1}, session=session)
+        assert im.db['test'].count_documents({}) == 2
 
+
+def test_transactions_read_first(tmpdir):
+    skip_if_no_mongod()
+    with InstantMongoDB(tmpdir, as_replica_set=True) as im:
+        assert im.db['test'].count_documents({}) == 0
+        with im.client.start_session() as session:
+            with session.start_transaction():
+                im.db['test'].insert_one({'test': 1}, session=session)
+                im.db['test'].insert_one({'test': 1}, session=session)
         assert im.db['test'].count_documents({}) == 2
