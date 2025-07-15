@@ -51,6 +51,7 @@ def test_drop_everything(tmpdir):
         assert 'testcoll' not in im.db.list_collection_names()
         assert count_documents(im.db['testcoll']) == 0
 
+
 def test_as_replica_set(tmpdir):
     skip_if_no_mongod()
     with raises(pymongo.errors.OperationFailure):
@@ -60,6 +61,7 @@ def test_as_replica_set(tmpdir):
     with InstantMongoDB(tmpdir, as_replica_set=True) as im:
         status = im.client.admin.command('replSetGetStatus')
         assert status['myState'] == 1
+
 
 def test_transactions(tmpdir):
     skip_if_no_mongod()

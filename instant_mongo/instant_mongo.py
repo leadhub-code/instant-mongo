@@ -5,8 +5,6 @@ import subprocess
 import threading
 from time import time, sleep
 
-import pymongo
-
 from .port_guard import PortGuard
 from .util import patch_pymongo_periodic_executor, drop_all_dbs
 from .util import tcp_conns_accepted_on_port, to_path
