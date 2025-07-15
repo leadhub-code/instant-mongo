@@ -5,6 +5,8 @@ import subprocess
 import threading
 from time import time, sleep
 
+import pymongo
+
 from .port_guard import PortGuard
 from .util import patch_pymongo_periodic_executor, drop_all_dbs
 from .util import tcp_conns_accepted_on_port, to_path
@@ -32,13 +34,14 @@ class InstantMongoDB:
 
     wait_timeout = 10
 
-    def __init__(self, data_parent_dir=None, data_dir=None, port=None):
+    def __init__(self, data_parent_dir=None, data_dir=None, port=None, as_replica_set=False):
         self.logger = logger
         self.port = port
         self.mongo_uri = None
         self._port_guard = None
         self._temp_dir = None
         self._mongodb_process = None
+        self.as_replica_set = as_replica_set
 
         # figure out self.data_dir
         if data_dir:
@@ -71,11 +74,13 @@ class InstantMongoDB:
             self._mongodb_process = MongoDBProcess(
                 logger=self.logger,
                 data_dir=self.data_dir,
-                port=self.port)
+                port=self.port,
+                as_replica_set=self.as_replica_set)
             self._mongodb_process.start()
             self._wait_for_accepting_tcp_conns()
             self._client = None
             self.mongo_uri = 'mongodb://127.0.0.1:{}'.format(self.port)
+            self._init_rs()
         except BaseException as e:
             self.stop()
             raise e
@@ -87,6 +92,28 @@ class InstantMongoDB:
             if tcp_conns_accepted_on_port(self.port):
                 return
             sleep(.01)
+
+    def _init_rs(self):
+        if not self.as_replica_set:
+            return
+
+        # Initialize the replica set. We need directConnection=True to connect as a standalone client.
+        client = self.get_client(
+            directConnection=True,
+        )
+
+        # Start the initialization.
+        client.admin.command('replSetInitiate')
+
+        # Wait for the primary to be elected.
+        while True:
+            status = client.admin.command('replSetGetStatus')
+            if status['myState'] == 1:
+                break
+            sleep(.01)
+
+        # Clean up.
+        client.close()
 
     def stop(self):
         if self._mongodb_process:
@@ -131,13 +158,14 @@ class InstantMongoDB:
 
 class MongoDBProcess:
 
-    def __init__(self, logger, data_dir, port):
+    def __init__(self, logger, data_dir, port, as_replica_set):
         self._logger = logger
         self._data_dir = data_dir.resolve()
         self._port = port
         self._mongod_process = None
         self._stdout_reader = None
         self._stderr_reader = None
+        self._as_replica_set = as_replica_set
 
     def start(self):
         try:
@@ -151,6 +179,12 @@ class MongoDBProcess:
                 '--storageEngine', 'wiredTiger',
                 '--wiredTigerCacheSizeGB', '1',
             ]
+            if self._as_replica_set:
+                cmd.extend([
+                    '--replSet', 'test-rs',
+                    '--oplogSize', '1000',
+                ])
+
             self._mongod_process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,

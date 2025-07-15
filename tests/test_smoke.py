@@ -1,6 +1,6 @@
 import os
-import pymongo
-from pytest import skip
+import pymongo.errors
+from pytest import skip, raises
 import subprocess
 
 from instant_mongo import InstantMongoDB
@@ -50,3 +50,24 @@ def test_drop_everything(tmpdir):
         im.drop_everything()
         assert 'testcoll' not in im.db.list_collection_names()
         assert count_documents(im.db['testcoll']) == 0
+
+def test_as_replica_set(tmpdir):
+    skip_if_no_mongod()
+    with raises(pymongo.errors.OperationFailure):
+        with InstantMongoDB(tmpdir) as im:
+            im.client.admin.command('replSetGetStatus')
+
+    with InstantMongoDB(tmpdir, as_replica_set=True) as im:
+        status = im.client.admin.command('replSetGetStatus')
+        assert status['myState'] == 1
+
+def test_transactions(tmpdir):
+    skip_if_no_mongod()
+
+    with InstantMongoDB(tmpdir, as_replica_set=True) as im:
+        with im.client.start_session() as session:
+            with session.start_transaction():
+                im.db['test'].insert_one({'test': 1}, session=session)
+                im.db['test'].insert_one({'test': 1}, session=session)
+
+        assert im.db['test'].count_documents({}) == 2
