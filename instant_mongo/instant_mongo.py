@@ -127,7 +127,7 @@ class InstantMongoDB:
     @property
     def client(self):
         if not self._client:
-            self._client = self.get_client()
+            self._client = self.get_client(connect=True)
         return self._client
 
     def get_client(self, **kwargs):
