@@ -34,7 +34,7 @@ class InstantMongoDB:
     - im.mongo_uri is 'mongodb://127.0.0.1:{port}'
     - im.client is pymongo.MongoClient(im.mongodb_uri)
     - im.db is im.client['test']
-    - im.drop_everything() drops all collections; intended for tests
+    - im.drop_everything() drops all databases and collections; intended for tests
     '''
 
     wait_timeout = 10
