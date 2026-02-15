@@ -1,7 +1,7 @@
 # This workflow will install Python dependencies, run tests and lint with a variety of Python versions
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 
-name: Python package
+name: Python tests
 
 on: [push, pull_request]
 
@@ -12,6 +12,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - { os: ubuntu-latest, python-version: '3.14', mongodb-version: '8.0', pymongo-version: '4.16.0' }
           - { os: ubuntu-latest, python-version: '3.13', mongodb-version: '8.0', pymongo-version: '4.12.1' }
           - { os: ubuntu-22.04,  python-version: '3.12', mongodb-version: '8.0', pymongo-version: '4.12.1' }
           - { os: ubuntu-22.04,  python-version: '3.11', mongodb-version: '7.0', pymongo-version: '4.12.1' }
@@ -20,7 +21,8 @@ jobs:
           - { os: ubuntu-22.04,  python-version: '3.9',  mongodb-version: '6.0', pymongo-version: '3.13.0' }
 
         # More about the Python versions:
-        #   3.13 - latest stable Python version
+        #   3.14 - latest stable Python version
+        #   3.13 - Python version in Debian 13
         #   3.11 - Python version in Debian 12
         #   3.9 - Python version in Debian 11
 

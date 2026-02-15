@@ -19,7 +19,4 @@ $(venv_dir)/packages-installed: pyproject.toml
 	$(venv_dir)/bin/pip install -e .[test]
 	touch $@
 
-check-py3.6:
-	make check python3=python3.6 venv_dir=$(venv_dir)-py3.6
-
 .PHONY: venv
