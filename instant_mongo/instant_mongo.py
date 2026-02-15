@@ -12,6 +12,11 @@ from threading import Event, Thread
 from time import sleep, time_ns
 from typing import Optional
 
+try:
+    from pymongo import AsyncMongoClient
+except ImportError:
+    AsyncMongoClient = None
+
 from .port_guard import PortGuard
 from .util import patch_pymongo_periodic_executor, drop_all_dbs
 from .util import tcp_conns_accepted_on_port, to_path
@@ -179,6 +184,17 @@ class InstantMongoDB:
         # TODO: remove patch_pymongo_periodic_executor - it was used only for old pymongo versions
         with patch_pymongo_periodic_executor():
             return MongoClient(self.mongo_uri, **kwargs)
+
+    def get_async_client(self, **kwargs) -> AsyncMongoClient:
+        '''
+        Returns a pymongo.AsyncMongoClient instance connected to the MongoDB server.
+
+        The instance will not be cached and will be created anew on each call.
+        Can be used as an async context manager.
+        '''
+        if AsyncMongoClient is None:
+            raise RuntimeError('AsyncMongoClient is not available - pymongo 4.x is required')
+        return AsyncMongoClient(self.mongo_uri, **kwargs)
 
     @property
     def db(self) -> Database:

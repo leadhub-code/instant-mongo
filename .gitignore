@@ -2,6 +2,7 @@
 *.egg-info
 __pycache__
 venv
+.venv
 local
 .cache
 .pytest_cache

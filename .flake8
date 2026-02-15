@@ -1,6 +1,6 @@
 [flake8]
 
-extend-exclude = venv,dist,build
+extend-exclude = venv,.venv,dist,build
 
 extend-ignore =
     # at least two spaces before inline comment

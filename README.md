@@ -96,7 +96,50 @@ def test_mongodb_works(db):
 This is compatible with parallel test running via pytest-xdist.
 
 
+### Async pytest fixture (pymongo 4.x+)
+
+If you are using `AsyncMongoClient` from pymongo 4.x:
+
+```python
+# conftest.py
+
+from bson import ObjectId
+from os import environ
+from pymongo import AsyncMongoClient
+from pytest import fixture
+from instant_mongo import InstantMongoDB
+import pytest_asyncio
+
+@fixture(scope='session')
+def async_mongo_client(tmpdir_factory):
+    if environ.get('TEST_MONGO_PORT'):
+        yield AsyncMongoClient(port=int(environ['TEST_MONGO_PORT']))
+    else:
+        temp_dir = tmpdir_factory.mktemp('instant-mongo')
+        with InstantMongoDB(data_parent_dir=temp_dir) as im:
+            yield im.get_async_client()
+
+@pytest_asyncio.fixture
+async def async_db(async_mongo_client):
+    db_name = f'test_{ObjectId()}'
+    yield async_mongo_client[db_name]
+    await async_mongo_client.drop_database(db_name)
+
+# test_smoke.py
+
+import pytest
+
+@pytest.mark.asyncio
+async def test_mongodb_works(async_db):
+    await async_db['testcoll'].insert_one({'foo': 'bar'})
+    doc = await async_db['testcoll'].find_one()
+    assert doc['foo'] == 'bar'
+```
+
+
 ### Fork-safe pytest fixture
+
+When you need to be sure no leftover threads are running from MongoClient or InstantMongoDB when a test finishes.
 
 ```python
 # conftest.py
@@ -174,6 +217,7 @@ with InstantMongoDB(data_parent_dir=None, *, data_dir=None, port=None,
 **Methods:**
 
 - `im.get_client(**kwargs)` → `pymongo.MongoClient` — creates a new (uncached) client. Accepts the same keyword arguments as `pymongo.MongoClient`. The returned client can be used as a context manager.
+- `im.get_async_client(**kwargs)` → `pymongo.AsyncMongoClient` — creates a new async client (pymongo 4.x+). Accepts the same keyword arguments as `pymongo.AsyncMongoClient`. The returned client can be used as an async context manager.
 - `im.get_new_test_db()` → `pymongo.database.Database` — returns a database with a randomly generated name, useful for test isolation.
 - `im.close_client()` — closes the cached client (if any). The client will be recreated on next access to `im.client`.
 - `im.drop_everything()` — drops all databases and collections (except internal ones). Intended for cleanup between tests.

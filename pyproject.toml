@@ -28,7 +28,7 @@ keywords = ["instant", "MongoDB", "testing"]
 dependencies = ["pymongo"]
 
 [project.optional-dependencies]
-test = ["pytest"]
+test = ["pytest", "pytest-asyncio"]
 
 [tool.setuptools.packages.find]
 exclude = ["doc", "tests"]
