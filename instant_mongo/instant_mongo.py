@@ -6,9 +6,9 @@ from pymongo import MongoClient
 from pymongo.database import Database
 from re import match
 from shutil import rmtree
-import subprocess
+from subprocess import Popen, PIPE
 from tempfile import TemporaryDirectory
-import threading
+from threading import Event, Thread
 from time import sleep, time_ns
 from typing import Optional
 
@@ -39,11 +39,12 @@ class InstantMongoDB:
 
     wait_timeout = 10
 
-    def __init__(self, data_parent_dir=None, *, data_dir=None, port=None, as_replica_set=False, delete_data_dir_on_exit=None):
+    def __init__(self, data_parent_dir=None, *, data_dir=None, port=None, as_replica_set=False, delete_data_dir_on_exit=None, follow_logs=False):
         self.logger = logger
         self.port: Optional[int] = port
         self.as_replica_set = as_replica_set
         self.delete_data_dir_on_exit = delete_data_dir_on_exit
+        self.follow_logs = follow_logs
         self._exit_stack = None
         # figure out self.data_dir
         if data_dir:
@@ -93,7 +94,8 @@ class InstantMongoDB:
                 logger=self.logger,
                 data_dir=self.data_dir,
                 port=self.port,
-                as_replica_set=self.as_replica_set)
+                as_replica_set=self.as_replica_set,
+                follow_logs=self.follow_logs)
             self._exit_stack.callback(self._mongodb_process.stop)
             self._mongodb_process.start()
             self._wait_for_accepting_tcp_conns()
@@ -184,14 +186,17 @@ class InstantMongoDB:
 
 class MongoDBProcess:
 
-    def __init__(self, logger, data_dir, port, as_replica_set):
+    def __init__(self, logger, data_dir, port, as_replica_set, follow_logs):
         self._logger = logger
         self._data_dir = data_dir.resolve()
+        self._stdout_path = data_dir / 'mongod-stdout.log'
+        self._stderr_path = data_dir / 'mongod-stderr.log'
         self._port = port
         self._mongod_process = None
         self._stdout_reader = None
         self._stderr_reader = None
         self._as_replica_set = as_replica_set
+        self._follow_logs = follow_logs
 
     def start(self):
         try:
@@ -210,19 +215,20 @@ class MongoDBProcess:
                     '--replSet', 'test-rs',
                     '--oplogSize', '1000',
                 ])
-
-            self._mongod_process = subprocess.Popen(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE)
-            self._stdout_reader = OutputReader(
-                self._logger,
-                self._mongod_process.stdout,
-                'mongod[{}] out'.format(self._mongod_process.pid))
-            self._stderr_reader = OutputReader(
-                self._logger,
-                self._mongod_process.stderr,
-                'mongod[{}] err'.format(self._mongod_process.pid))
+            with self._stdout_path.open('wb') as stdout_file, self._stderr_path.open('wb') as stderr_file:
+                self._mongod_process = Popen(
+                    cmd,
+                    stdout=stdout_file,
+                    stderr=stderr_file)
+            if self._follow_logs:
+                self._stdout_reader = OutputFileReader(
+                    self._logger,
+                    self._stdout_path,
+                    'mongod[{}] out'.format(self._mongod_process.pid))
+                self._stderr_reader = OutputFileReader(
+                    self._logger,
+                    self._stderr_path,
+                    'mongod[{}] err'.format(self._mongod_process.pid))
         except BaseException as e:
             self.stop()
             raise e
@@ -234,43 +240,45 @@ class MongoDBProcess:
             self._mongod_process.wait()
             self._mongod_process = None
         if self._stdout_reader:
-            self._stdout_reader.wait()
+            self._stdout_reader.stop()
             self._stdout_reader = None
         if self._stderr_reader:
-            self._stderr_reader.wait()
+            self._stderr_reader.stop()
             self._stderr_reader = None
 
     def is_alive(self):
         return self._mongod_process.poll() is None
 
 
-class OutputReader:
+class OutputFileReader:
 
-    def __init__(self, logger, stream, name):
+    def __init__(self, logger, file_path, name):
         self.logger = logger
-        self.stream = stream
+        self.file_path = file_path
         self.name = name
-        self.thread = threading.Thread(target=self.run)
+        self.stop_event = Event()
+        self.thread = Thread(target=self._run)
         self.thread.start()
 
-    def run(self):
-        while True:
-            line = self.stream.readline()
-            if not line:
-                self.logger.debug('%s closed', self.name)
-                self.stream.close()
-                break
-            try:
-                line = line.decode()
-            except Exception:
-                line = str(line)
-            try:
-                line = self._preprocess_line(line)
-            except Exception as e:
-                self.logger.exception('Failed to preprocess line %r: %r', line, e)
-            self.logger.debug('%s: %s', self.name, line.rstrip())
+    def _run(self):
+        with self.file_path.open('rb') as f:
+            while not self.stop_event.is_set():
+                line = f.readline()
+                if not line:
+                    sleep(0.01)
+                    continue
+                try:
+                    line = line.decode()
+                except Exception:
+                    line = str(line)
+                try:
+                    line = self._preprocess_line(line)
+                except Exception as e:
+                    self.logger.exception('Failed to preprocess line %r: %r', line, e)
+                self.logger.debug('%s: %s', self.name, line.rstrip())
 
-    def wait(self):
+    def stop(self):
+        self.stop_event.set()
         self.thread.join()
         self.thread = None
 

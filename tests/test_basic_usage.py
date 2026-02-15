@@ -1,3 +1,4 @@
+from logging import getLogger
 from os import environ
 from pymongo import version as pymongo_version
 from pymongo import MongoClient
@@ -6,9 +7,13 @@ from pymongo.errors import NotPrimaryError, OperationFailure
 from pytest import fixture, skip, raises
 from subprocess import check_call
 from threading import active_count
+from time import sleep
 
 from instant_mongo import InstantMongoDB
 from instant_mongo.util import count_documents
+
+
+logger = getLogger(__name__)
 
 
 @fixture(scope='session')
@@ -126,9 +131,17 @@ def test_no_threads_are_started(needs_mongod, tmp_path):
     with InstantMongoDB(tmp_path) as im:
         assert active_count() == 1
         with im.get_client() as client:
-            im.db['testcoll'].insert_one({'foo': 'bar'})
+            client['testdb']['testcoll'].insert_one({'foo': 'bar'})
             assert active_count() > 1  # e.g. MongoClient maintains thread(s) for replica set monitoring
         # The MongoClient from above should be closed now
+        for _ in range(50):
+            num = active_count()
+            if num > 1:
+                logger.debug('Still %d threads running', num)
+                sleep(0.05)
+                continue
+            else:
+                break
         assert active_count() == 1
     # After
     assert active_count() == 1
