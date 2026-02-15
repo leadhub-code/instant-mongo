@@ -38,6 +38,17 @@ def test_instant_mongo_client_attribute(needs_mongod, tmp_path):
         assert doc['foo'] == 'bar'
 
 
+def test_instant_mongo_get_client_method(needs_mongod, tmp_path):
+    with InstantMongoDB(tmp_path) as im:
+        client = im.get_client()
+        assert isinstance(client, MongoClient)
+        assert im._client is None  # do not cache clients created by explicit calls of im.get_client()
+        client['test']['testcoll'].insert_one({'foo': 'bar'})
+        with client:  # MongoClient should support context manager
+            doc, = client['test']['testcoll'].find()
+            assert doc['foo'] == 'bar'
+
+
 def test_instant_mongo_mongo_uri_attribute(needs_mongod, tmp_path):
     with InstantMongoDB(tmp_path) as im:
         assert isinstance(im.mongo_uri, str)
@@ -49,11 +60,16 @@ def test_instant_mongo_mongo_uri_attribute(needs_mongod, tmp_path):
 
 def test_instant_mongo_drop_everything_method(needs_mongod, tmp_path):
     with InstantMongoDB(tmp_path) as im:
+        result = im.drop_everything()
+        assert result is None  # drop_everything() doesn't return anything
+
+
+def test_instant_mongo_drop_everything_method_will_delete_everything(needs_mongod, tmp_path):
+    with InstantMongoDB(tmp_path) as im:
         im.db['testcoll'].insert_one({'foo': 'bar'})
         assert count_documents(im.db['testcoll']) == 1
         assert 'testcoll' in im.db.list_collection_names()
-        result = im.drop_everything()
-        assert result is None  # drop_everything() doesn't return anything
+        im.drop_everything()
         assert count_documents(im.db['testcoll']) == 0
         assert 'testcoll' not in im.db.list_collection_names()
 
@@ -63,6 +79,7 @@ def test_instant_mongo_get_new_test_db_method(needs_mongod, tmp_path):
         db = im.get_new_test_db()
         assert isinstance(db, Database)
         assert isinstance(db.name, str)
+        assert db.client is im.client
         # check that the database name is unique
         db2 = im.get_new_test_db()
         assert db.name != db2.name
