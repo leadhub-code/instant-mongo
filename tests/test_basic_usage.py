@@ -1,80 +1,93 @@
-import os
-import pymongo.errors
+from os import environ
 from pymongo import version as pymongo_version
-from pytest import skip, raises
+from pymongo import MongoClient
+from pymongo.database import Database
+from pymongo.errors import NotPrimaryError, OperationFailure
+from pytest import fixture, skip, raises
 import subprocess
 
 from instant_mongo import InstantMongoDB
 from instant_mongo.util import count_documents
 
 
-def skip_if_no_mongod():
+@fixture(scope='session')
+def needs_mongod():
     try:
         subprocess.check_call(['mongod', '--version'])
     except FileNotFoundError:
-        if os.environ.get('CI'):
+        if environ.get('CI'):
             raise Exception('mongod not found - need to be installed in a CI environment')
         else:
             skip('mongod not found')
 
 
-def test_example(tmpdir):
-    skip_if_no_mongod()
-    with InstantMongoDB(tmpdir) as im:
-        im.db.testcoll.insert_one({'foo': 'bar'})
-        doc, = im.db.testcoll.find()
-        assert doc['foo'] == 'bar'
-        assert 'testcoll' in im.db.list_collection_names()
-
-        doc, = im.client.test.testcoll.find()
-        assert doc['foo'] == 'bar'
-
-        client = pymongo.MongoClient(im.mongo_uri)
-        doc, = client.test.testcoll.find()
-        assert doc['foo'] == 'bar'
-
-
-def test_get_new_test_db(tmpdir):
-    skip_if_no_mongod()
-    with InstantMongoDB(tmpdir) as im:
-        db1 = im.get_new_test_db()
-        db2 = im.get_new_test_db()
-        assert db1.name != db2.name
-
-
-def test_drop_everything(tmpdir):
-    skip_if_no_mongod()
-    with InstantMongoDB(tmpdir) as im:
+def test_instant_mongo_db_attribute(needs_mongod, tmp_path):
+    with InstantMongoDB(tmp_path) as im:
+        assert isinstance(im.db, Database)
         im.db['testcoll'].insert_one({'foo': 'bar'})
+        doc, = im.db['testcoll'].find()
+        assert doc['foo'] == 'bar'
         assert 'testcoll' in im.db.list_collection_names()
+
+
+def test_instant_mongo_client_attribute(needs_mongod, tmp_path):
+    with InstantMongoDB(tmp_path) as im:
+        assert isinstance(im.client, MongoClient)
+        im.db['testcoll'].insert_one({'foo': 'bar'})
+        doc, = im.client['test']['testcoll'].find()
+        assert doc['foo'] == 'bar'
+
+
+def test_instant_mongo_mongo_uri_attribute(needs_mongod, tmp_path):
+    with InstantMongoDB(tmp_path) as im:
+        assert isinstance(im.mongo_uri, str)
+        im.db['testcoll'].insert_one({'foo': 'bar'})
+        client = MongoClient(im.mongo_uri)
+        doc, = client['test']['testcoll'].find()
+        assert doc['foo'] == 'bar'
+
+
+def test_instant_mongo_drop_everything_method(needs_mongod, tmp_path):
+    with InstantMongoDB(tmp_path) as im:
+        im.db['testcoll'].insert_one({'foo': 'bar'})
         assert count_documents(im.db['testcoll']) == 1
-        im.drop_everything()
-        assert 'testcoll' not in im.db.list_collection_names()
+        assert 'testcoll' in im.db.list_collection_names()
+        result = im.drop_everything()
+        assert result is None  # drop_everything() doesn't return anything
         assert count_documents(im.db['testcoll']) == 0
+        assert 'testcoll' not in im.db.list_collection_names()
 
 
-def test_as_replica_set(tmpdir):
-    skip_if_no_mongod()
-    with raises(pymongo.errors.OperationFailure):
-        with InstantMongoDB(tmpdir) as im:
-            im.client.admin.command('replSetGetStatus')
+def test_instant_mongo_get_new_test_db_method(needs_mongod, tmp_path):
+    with InstantMongoDB(tmp_path) as im:
+        db = im.get_new_test_db()
+        assert isinstance(db, Database)
+        assert isinstance(db.name, str)
+        # check that the database name is unique
+        db2 = im.get_new_test_db()
+        assert db.name != db2.name
 
-    with InstantMongoDB(tmpdir, as_replica_set=True) as im:
-        status = im.client.admin.command('replSetGetStatus')
+
+def test_as_replica_set(needs_mongod, tmp_path):
+    with raises(OperationFailure):
+        with InstantMongoDB(tmp_path) as im:
+            im.client['admin'].command('replSetGetStatus')
+
+    with InstantMongoDB(tmp_path, as_replica_set=True) as im:
+        status = im.client['admin'].command('replSetGetStatus')
         assert status['myState'] == 1
 
 
-def test_transactions(tmpdir):
-    skip_if_no_mongod()
+def test_transactions(needs_mongod, tmp_path):
     try:
-        with InstantMongoDB(tmpdir, as_replica_set=True) as im:
+        with InstantMongoDB(tmp_path, as_replica_set=True) as im:
             with im.client.start_session() as session:
                 with session.start_transaction():
                     im.db['test'].insert_one({'test': 1}, session=session)
                     im.db['test'].insert_one({'test': 1}, session=session)
 
             assert im.db['test'].count_documents({}) == 2
-    except pymongo.errors.NotPrimaryError as e:
+    except NotPrimaryError as e:
         if pymongo_version.startswith('3.'):
             skip('Fails with NotPrimaryError on pymongo 3.*')
         else:
