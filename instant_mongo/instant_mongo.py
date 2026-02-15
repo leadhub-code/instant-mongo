@@ -138,11 +138,11 @@ class InstantMongoDB:
             self._exit_stack.close()
             self._exit_stack = None
         self._mongodb_process = None
-        if self.delete_data_dir_on_exit:
+        if self.delete_data_dir_on_exit and self.data_dir is not None:
             # Pytest doesn't delete tmp dirs immediately. So after a few runs
             # a smaller /tmp filesystem could be easily filled up.
             # So we delete the data dir explicitly.
-            rmtree(self.data_dir)
+            rmtree(self.data_dir, ignore_errors=True)
             self.data_dir = None
 
     @property
