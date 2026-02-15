@@ -6,7 +6,7 @@ from pymongo import MongoClient
 from pymongo.database import Database
 from re import match
 from shutil import rmtree
-from subprocess import Popen, PIPE
+from subprocess import Popen
 from tempfile import TemporaryDirectory
 from threading import Event, Thread
 from time import sleep, time_ns
@@ -147,20 +147,53 @@ class InstantMongoDB:
 
     @property
     def client(self) -> MongoClient:
+        '''
+        Returns a pymongo.MongoClient instance connected to the MongoDB server.
+
+        The instance will also be cached and returned again on subsequent calls.
+        '''
         if not self._client:
             self._client = self.get_client(connect=True)
         return self._client
 
+    def close_client(self):
+        '''
+        Closes the cached pymongo.MongoClient instance (if any).
+
+        The instance will be recreated on next access to `im.client`.
+
+        This method is intended to be used when you need to close the client
+        after each test to make sure you have no leftover threads running
+        (e.g. for fork safety).
+        '''
+        if self._client is not None:
+            self._client.close()
+            self._client = None
+
     def get_client(self, **kwargs) -> MongoClient:
+        '''
+        Returns a pymongo.MongoClient instance connected to the MongoDB server.
+
+        The instance will not be cached and will be created anew on each call.
+        '''
         # TODO: remove patch_pymongo_periodic_executor - it was used only for old pymongo versions
         with patch_pymongo_periodic_executor():
             return MongoClient(self.mongo_uri, **kwargs)
 
     @property
     def db(self) -> Database:
+        '''
+        Returns a pymongo.Database instance connected to the MongoDB server working on the 'test' database.
+
+        The Database instance comes from the cached MongoClient instance.
+        '''
         return self.client['test']
 
     def get_new_test_db(self) -> Database:
+        '''
+        Returns a pymongo.Database instance connected to the MongoDB server.
+        Database name will be randomly generated.
+        '''
         # If you have many tests and you create a new database for each test, don't forget
         # to drop them after the test - MongoDB might run out of space or open file handlers.
         # You can use the drop_everything() method.
@@ -169,7 +202,7 @@ class InstantMongoDB:
     @property
     def mongodb_uri(self) -> str:
         '''
-        For backwards compatibility
+        For backwards compatibility. Please use `mongo_uri` attribute instead.
         '''
         return self.mongo_uri
 
