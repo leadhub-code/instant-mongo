@@ -1,4 +1,4 @@
-name: Install from Github
+name: Install from GitHub
 
 on:
   push:

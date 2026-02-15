@@ -25,13 +25,13 @@ class InstantMongoDB:
     Usage:
 
     with InstantMongoDB(data_dir='/tmp/data') as im:
-        print(im.db.collection_names())
+        print(im.db.list_collection_names())
 
     The database is automatically stopped at the end of the with-block.
 
     Available attributes and methods:
 
-    - im.mongodb_uri is 'mongodb://127.0.0.1:{port}'
+    - im.mongo_uri is 'mongodb://127.0.0.1:{port}'
     - im.client is pymongo.MongoClient(im.mongodb_uri)
     - im.db is im.client['test']
     - im.drop_everything() drops all collections; intended for tests
@@ -195,7 +195,7 @@ class InstantMongoDB:
         Database name will be randomly generated.
         '''
         # If you have many tests and you create a new database for each test, don't forget
-        # to drop them after the test - MongoDB might run out of space or open file handlers.
+        # to drop them after the test - MongoDB might run out of space or open file handles.
         # You can use the drop_everything() method.
         return self.client[f'test_{time_ns()}']
 

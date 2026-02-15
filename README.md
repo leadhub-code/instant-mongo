@@ -46,8 +46,8 @@ with InstantMongoDB() as im:
 Available attributes and methods:
 
 - `im.mongo_uri` is `"mongodb://127.0.0.1:{port}"`
-- `im.client` is `pymongo.MongoClient(im.mongodb_uri)` (created only once and cached in `im` object)
-- `im.get_client()` returns a new `pymongo.MongoClient(im.mongodb_uri)` (you can customize `MongoClient` kwargs)
+- `im.client` is `pymongo.MongoClient(im.mongo_uri)` (created only once and cached in `im` object)
+- `im.get_client()` returns a new `pymongo.MongoClient(im.mongo_uri)` (you can customize `MongoClient` kwargs)
 - `im.db` is `im.client["test"]` (`pymongo.Database`)
 - `im.get_new_test_db()` returns a new `pymongo.Database` instance with a randomly generated name
 - `im.drop_everything()` drops all databases and collections; intended for tests
@@ -57,7 +57,7 @@ If you run MongoDB in `/tmp` and you have your `/tmp` on ramdisk (tmpfs) then it
 
 ### pytest fixture
 
-If you are using [pytest](http://pytest.org/) to run your test and would like to have nice fixture that provides MongoDB test instance:
+If you are using [pytest](http://pytest.org/) to run your tests and would like to have nice fixture that provides MongoDB test instance:
 
 ```python
 # conftest.py
