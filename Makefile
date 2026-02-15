@@ -1,10 +1,10 @@
 python3=python3
 venv_dir=venv
-pytest_args=-v
+pytest_args=-vv --tb=short --log-cli-level=INFO
 
 check: $(venv_dir)/packages-installed
 	PYTHONDONTWRITEBYTECODE=1 \
-		$(venv_dir)/bin/pytest $(pytest_args) tests
+		$(venv_dir)/bin/python3 -m pytest $(pytest_args) tests
 
 lint: $(venv_dir)/packages-installed
 	test -x $(venv_dir)/bin/flake8 || $(venv_dir)/bin/pip install flake8

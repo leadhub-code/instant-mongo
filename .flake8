@@ -13,7 +13,7 @@ extend-ignore =
     #E501
 
 max-complexity = 10
-max-line-length = 120
+max-line-length = 150
 
 per-file-ignores =
     # imported but unused
