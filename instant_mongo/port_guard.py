@@ -8,6 +8,8 @@ class PortGuard:
     Ports are allocated in pairs: a guard port and an application port.
     The guard socket is kept open to prevent the adjacent application port
     from being reused by another process before the caller binds to it.
+    But this approach works only if that another process uses the same port
+    allocation strategy.
 
     Use as a context manager to ensure guard sockets are cleaned up.
     """

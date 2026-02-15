@@ -4,7 +4,8 @@ from pymongo import MongoClient
 from pytest import fixture
 from instant_mongo import InstantMongoDB
 from threading import active_count
-from time import sleep, time_ns
+
+from instant_mongo.util import join_pymongo_threads
 
 
 @fixture(scope='session')
@@ -26,11 +27,7 @@ def db(mongo_client_factory):
         yield client[db_name]
         client.drop_database(db_name)
 
-    # It takes a bit of time for the client and its threads to be closed
-    t0 = time_ns()
-    while active_count() > 1:
-        assert (time_ns() - t0) < 1e9
-        sleep(0.01)
+    join_pymongo_threads()
     assert active_count() == 1
 
 

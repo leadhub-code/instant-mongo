@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 from pathlib import Path
 import pymongo
+from threading import enumerate as enumerate_threads
 
 
 def to_path(p):
@@ -94,3 +95,14 @@ def tcp_conns_accepted_on_port(port, host='127.0.0.1'):
     else:
         c.close()
         return True
+
+
+def join_pymongo_threads():
+    '''
+    PyMongo maintains threads for replica set monitoring.
+    But client.close() doesn't wait for them to finish.
+    So we need to join them manually.
+    '''
+    for t in enumerate_threads():
+        if t.name.startswith("pymongo_"):
+            t.join(timeout=10)
