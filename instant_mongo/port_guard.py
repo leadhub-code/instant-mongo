@@ -1,11 +1,26 @@
-import socket
+from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 
 
 class PortGuard:
+    """
+    Allocate available TCP ports while preventing race conditions.
 
-    def __init__(self, start_port=9900):
+    Ports are allocated in pairs: a guard port and an application port.
+    The guard socket is kept open to prevent the adjacent application port
+    from being reused by another process before the caller binds to it.
+
+    Use as a context manager to ensure guard sockets are cleaned up.
+    """
+
+    def __init__(self, start_port=19000):
         self._next_port = start_port
         self._guard_sockets = []
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
     def get_listening_socket(self, bind_host='127.0.0.1'):
         while True:
@@ -14,18 +29,14 @@ class PortGuard:
             s_guard = None
             s_app = None
             try:
-                s_guard = socket.socket(
-                    family=socket.AF_INET,
-                    type=socket.SOCK_STREAM)
-                s_guard.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                s_guard.bind(('127.0.0.1', guard_port))
+                s_guard = socket(family=AF_INET, type=SOCK_STREAM)
+                s_guard.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+                s_guard.bind((bind_host, guard_port))
                 s_guard.listen(1)
 
-                s_app = socket.socket(
-                    family=socket.AF_INET,
-                    type=socket.SOCK_STREAM)
-                s_app.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                s_app.bind(('127.0.0.1', app_port))
+                s_app = socket(family=AF_INET, type=SOCK_STREAM)
+                s_app.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+                s_app.bind((bind_host, app_port))
                 s_app.listen(1)
             except Exception:
                 if s_guard:
