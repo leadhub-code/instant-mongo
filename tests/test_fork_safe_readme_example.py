@@ -31,6 +31,7 @@ def db(mongo_client_factory):
     while active_count() > 1:
         assert (time_ns() - t0) < 1e9
         sleep(0.01)
+    assert active_count() == 1
 
 
 def test_00_no_threads_are_running():
