@@ -4,7 +4,8 @@ from pymongo import MongoClient
 from pymongo.database import Database
 from pymongo.errors import NotPrimaryError, OperationFailure
 from pytest import fixture, skip, raises
-import subprocess
+from subprocess import check_call
+from threading import active_count
 
 from instant_mongo import InstantMongoDB
 from instant_mongo.util import count_documents
@@ -13,7 +14,7 @@ from instant_mongo.util import count_documents
 @fixture(scope='session')
 def needs_mongod():
     try:
-        subprocess.check_call(['mongod', '--version'])
+        check_call(['mongod', '--version'])
     except FileNotFoundError:
         if environ.get('CI'):
             raise Exception('mongod not found - need to be installed in a CI environment')
@@ -109,3 +110,25 @@ def test_transactions(needs_mongod, tmp_path):
             skip('Fails with NotPrimaryError on pymongo 3.*')
         else:
             raise e
+
+
+def test_no_leftover_threads_are_running_after_instant_mongo_is_closed(needs_mongod, tmp_path):
+    assert active_count() == 1
+    with InstantMongoDB(tmp_path) as im:
+        im.db['testcoll'].insert_one({'foo': 'bar'})
+        assert active_count() > 1  # e.g. MongoClient maintains thread(s) for replica set monitoring
+    # After
+    assert active_count() == 1
+
+
+def test_no_threads_are_started(needs_mongod, tmp_path):
+    assert active_count() == 1
+    with InstantMongoDB(tmp_path) as im:
+        assert active_count() == 1
+        with im.get_client() as client:
+            im.db['testcoll'].insert_one({'foo': 'bar'})
+            assert active_count() > 1  # e.g. MongoClient maintains thread(s) for replica set monitoring
+        # The MongoClient from above should be closed now
+        assert active_count() == 1
+    # After
+    assert active_count() == 1
