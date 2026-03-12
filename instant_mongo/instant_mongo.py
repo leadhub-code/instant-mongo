@@ -273,11 +273,11 @@ class MongoDBProcess:
                 self._stdout_reader = OutputFileReader(
                     self._logger,
                     self._stdout_path,
-                    'mongod[{}] out'.format(self._mongod_process.pid))
+                    f'mongod[{self._mongod_process.pid}] out')
                 self._stderr_reader = OutputFileReader(
                     self._logger,
                     self._stderr_path,
-                    'mongod[{}] err'.format(self._mongod_process.pid))
+                    f'mongod[{self._mongod_process.pid}] err')
         except BaseException as e:
             self.stop()
             raise e

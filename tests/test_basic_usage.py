@@ -4,7 +4,7 @@ from pymongo import version as pymongo_version
 from pymongo import MongoClient
 from pymongo.database import Database
 from pymongo.errors import NotPrimaryError, OperationFailure
-from pytest import fixture, skip, raises
+from pytest import fixture, skip, raises, mark
 from subprocess import check_call
 from threading import active_count
 
@@ -43,9 +43,10 @@ def test_instant_mongo_client_attribute(needs_mongod, tmp_path):
         assert doc['foo'] == 'bar'
 
 
-def test_instant_mongo_get_client_method(needs_mongod, tmp_path):
+@mark.parametrize('mc_args', [{}, {'tz_aware': True}])
+def test_instant_mongo_get_client_method(needs_mongod, tmp_path, mc_args):
     with InstantMongoDB(tmp_path) as im:
-        client = im.get_client()
+        client = im.get_client(**mc_args)
         assert isinstance(client, MongoClient)
         assert im._client is None  # do not cache clients created by explicit calls of im.get_client()
         client['test']['testcoll'].insert_one({'foo': 'bar'})

@@ -33,7 +33,7 @@ def instant_mongo(needs_mongod, tmp_path_factory):
 
 @async_fixture
 async def db(instant_mongo):
-    async with instant_mongo.get_async_client() as client:
+    async with instant_mongo.get_async_client(tz_aware=True) as client:
         db_name = f'test_{ObjectId()}'
         yield client[db_name]
         await client.drop_database(db_name)

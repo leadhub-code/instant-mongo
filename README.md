@@ -47,7 +47,8 @@ Available attributes and methods:
 
 - `im.mongo_uri` is `"mongodb://127.0.0.1:{port}"`
 - `im.client` is `pymongo.MongoClient(im.mongo_uri)` (created only once and cached in `im` object)
-- `im.get_client()` returns a new `pymongo.MongoClient(im.mongo_uri)` (you can customize `MongoClient` kwargs)
+- `im.get_client(**kwargs)` returns a new `pymongo.MongoClient(im.mongo_uri, **kwargs)`
+- `im.get_async_client(**kwargs)` returns a new `pymongo.AsyncMongoClient(im.mongo_uri, **kwargs)` (pymongo 4.x+)
 - `im.db` is `im.client["test"]` (`pymongo.Database`)
 - `im.get_new_test_db()` returns a new `pymongo.Database` instance with a randomly generated name
 - `im.drop_everything()` drops all databases and collections; intended for tests
@@ -71,13 +72,13 @@ from instant_mongo import InstantMongoDB
 @fixture(scope='session')
 def mongo_client(tmpdir_factory):
     if environ.get('TEST_MONGO_PORT'):
-        # use already running MongoDB instance
+        # Use already running MongoDB instance (e.g. in Github Actions)
         yield MongoClient(port=int(environ['TEST_MONGO_PORT']))
     else:
-        # run temporary MongoDB instance using instant-mongo
+        # Run temporary MongoDB instance using instant-mongo
         temp_dir = tmpdir_factory.mktemp('instant-mongo')
         with InstantMongoDB(data_parent_dir=temp_dir) as im:
-            yield im.client
+            yield im.get_client(tz_aware=True)
 
 @fixture
 def db(mongo_client):
@@ -111,19 +112,23 @@ from instant_mongo import InstantMongoDB
 import pytest_asyncio
 
 @fixture(scope='session')
-def async_mongo_client(tmpdir_factory):
+def instant_mongo_uri(tmpdir_factory):
     if environ.get('TEST_MONGO_PORT'):
-        yield AsyncMongoClient(port=int(environ['TEST_MONGO_PORT']))
+        # Use already running MongoDB instance (e.g. in Github Actions)
+        yield f'mongodb://127.0.0.1:{int(environ["TEST_MONGO_PORT"])}'
     else:
         temp_dir = tmpdir_factory.mktemp('instant-mongo')
         with InstantMongoDB(data_parent_dir=temp_dir) as im:
-            yield im.get_async_client()
+            yield im.mongo_uri
 
 @pytest_asyncio.fixture
-async def async_db(async_mongo_client):
-    db_name = f'test_{ObjectId()}'
-    yield async_mongo_client[db_name]
-    await async_mongo_client.drop_database(db_name)
+async def async_db(instant_mongo_uri):
+    # Create new AsyncMongoClient instance for each test to prevent issues
+    # with each test running with a different asyncio loop.
+    async with AsyncMongoClient(instant_mongo_uri) as client:
+        db_name = f'test_{ObjectId()}'
+        yield client[db_name]
+        await client.drop_database(db_name)
 
 # test_smoke.py
 
@@ -139,7 +144,11 @@ async def test_mongodb_works(async_db):
 
 ### Fork-safe pytest fixture
 
-When you need to be sure no leftover threads are running from MongoClient or InstantMongoDB when a test finishes.
+When you create a PyMongo MongoClient, it will start background threads for replica set monitoring.
+It is not a good idea to fork new processes when there are threads running (unless you are using a [_forkserver_ start method](https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods)).
+
+When you need to be sure no leftover threads are running from MongoClient or InstantMongoDB when a test finishes,
+you need to make sure `follow_logs` is not enabled in `InstantMongoDB` constructor and create a new `MongoClient` instance for each test.
 
 ```python
 # conftest.py
@@ -151,19 +160,19 @@ from pytest import fixture
 from instant_mongo import InstantMongoDB
 
 @fixture(scope='session')
-def mongo_client_factory(tmpdir_factory):
+def mongo_uri(tmpdir_factory):
     if environ.get('TEST_MONGO_PORT'):
-        # use already running MongoDB instance
-        yield lambda: MongoClient(port=int(environ['TEST_MONGO_PORT']))
+        # Use already running MongoDB instance (e.g. in Github Actions)
+        yield f'mongodb://127.0.0.1:{int(environ["TEST_MONGO_PORT"])}'
     else:
-        # run temporary MongoDB instance using instant-mongo
+        # Run temporary MongoDB instance using instant-mongo
         temp_dir = tmpdir_factory.mktemp('instant-mongo')
-        with InstantMongoDB(data_parent_dir=temp_dir) as im:
-            yield im.get_client
+        with InstantMongoDB(data_parent_dir=temp_dir, follow_logs=False) as im:
+            yield im.mongo_uri
 
 @fixture
-def db(mongo_client_factory):
-    with mongo_client_factory() as client:
+def db(mongo_uri):
+    with MongoClient(mongo_uri) as client:
         db_name = f'test_{ObjectId()}'
         yield client[db_name]
         client.drop_database(db_name)
@@ -206,7 +215,7 @@ with InstantMongoDB(data_parent_dir=None, *, data_dir=None, port=None,
 - `port` — TCP port for MongoDB to listen on. If not provided, an available port is selected automatically.
 - `as_replica_set` — if `True`, MongoDB is started as a single-node replica set (required for transactions).
 - `delete_data_dir_on_exit` — if `True` (or `None` and no `data_dir` is provided), the data directory is deleted when the context manager exits.
-- `follow_logs` — if `True`, `mongod` stdout/stderr log files are read and forwarded to Python logging.
+- `follow_logs` — if `True`, `mongod` stdout/stderr will be read (in background threads) and forwarded to Python logging.
 
 **Properties:**
 
@@ -231,3 +240,59 @@ Projects helping with testing of MongoDB-based applications:
 
 - [github.com/fakemongo/fongo](https://github.com/fakemongo/fongo) - In-memory java implementation of MongoDB
 - [github.com/AMCN41R/harness](https://github.com/AMCN41R/harness) - MongoDB Integration Test Framework, C#
+
+
+Changelog
+---------
+
+### Development version
+
+- Update readme
+- Switch to uv for dependency management and builds
+
+### 1.0.7 (2026-02-15)
+
+- Add `get_async_client()` method and async pytest fixture example
+- Add `close_client()` method
+- Refactor `InstantMongoDB` — add `delete_data_dir_on_exit` and `follow_logs` parameters
+- Replace stdout/stderr pipe threads with file-based output
+- Improve `stop()` — more robust `rmtree` cleanup
+- Improve fork safety
+
+**Breaking changes:**
+
+- `data_dir`, `port` and `as_replica_set` are now keyword-only parameters
+- `mongo_uri` is now a property — raises `RuntimeError` if accessed before `start()`
+- When using `data_parent_dir`, the data directory is now automatically deleted on exit (if `delete_data_dir_on_exit` not explicitly set to `False`)
+
+### 1.0.6 (2025-07-15)
+
+- Add `as_replica_set` flag — start MongoDB as a single-node replica set (required for transactions)
+- Add `connect=True` when creating `im.client`
+
+### 1.0.5 (2024-09-23)
+
+- Add `pyproject.toml`, remove `setup.py`
+- Remove `--nojournal` option that was removed in MongoDB 7.0 & add MongoDB 7.0 to CI version matrix
+- Hotfix `PeriodicExecutor` `AttributeError` for pymongo 4.9.1
+  - There was a monkey patch for `PeriodicExecutor` to make closing MongoClient faster, but it stopped working for pymongo 4.9+.
+
+### 1.0.4 (2023-06-12)
+
+- Fix `patch_pymongo_periodic_executor`
+- Add linter, fix linter warnings
+
+### 1.0.3 (2022-09-21)
+
+- Add method `get_client()` that can pass params to `MongoClient`
+
+### 1.0.2 (2018-09-08)
+
+- Migrate to pymongo 3.6/3.7 `list_database_names`/`list_collection_names` and `count_documents`
+
+### 1.0.1 (2017-05-30)
+
+- Fix warnings: explicitly close subprocess stdout/stderr stream
+- Add custom port support (PR #7)
+
+### 1.0.0 (2017-03-09)
