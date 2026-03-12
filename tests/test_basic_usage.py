@@ -110,11 +110,11 @@ def test_transactions(needs_mongod, tmp_path):
                     im.db['test'].insert_one({'test': 1}, session=session)
 
             assert im.db['test'].count_documents({}) == 2
-    except NotPrimaryError as e:
+    except NotPrimaryError:
         if pymongo_version.startswith('3.'):
             skip('Fails with NotPrimaryError on pymongo 3.*')
         else:
-            raise e
+            raise
 
 
 def test_no_leftover_threads_are_running_after_instant_mongo_is_closed(needs_mongod, tmp_path):

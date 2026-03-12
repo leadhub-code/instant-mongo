@@ -9,7 +9,7 @@ from shutil import rmtree
 from subprocess import Popen
 from tempfile import TemporaryDirectory
 from threading import Event, Thread
-from time import sleep, time_ns
+from time import sleep, time_ns, monotonic_ns
 from typing import Optional
 
 try:
@@ -113,11 +113,15 @@ class InstantMongoDB:
             raise
 
     def _wait_for_accepting_tcp_conns(self):
+        deadline = monotonic_ns() + self.wait_timeout * 1_000_000_000
         while True:
             if not self._mongodb_process.is_alive():
                 raise Exception('MongoDB process exited before it started to accept connections')
             if tcp_conns_accepted_on_port(self.port):
                 return
+            if monotonic_ns() > deadline:
+                raise TimeoutError(
+                    f'MongoDB did not start accepting connections within {self.wait_timeout}s')
             sleep(.01)
 
     def _init_rs(self):
@@ -127,10 +131,14 @@ class InstantMongoDB:
         with self.get_client(directConnection=True) as client:
             client.admin.command('replSetInitiate')
             # Wait for the primary to be elected.
+            deadline = monotonic_ns() + self.wait_timeout * 1_000_000_000
             while True:
                 status = client.admin.command('replSetGetStatus')
                 if status['myState'] == 1:
                     break
+                if monotonic_ns() > deadline:
+                    raise TimeoutError(
+                        f'Replica set primary not elected within {self.wait_timeout}s')
                 sleep(.01)
 
     def stop(self):
@@ -278,9 +286,9 @@ class MongoDBProcess:
                     self._logger,
                     self._stderr_path,
                     f'mongod[{self._mongod_process.pid}] err')
-        except BaseException as e:
+        except BaseException:
             self.stop()
-            raise e
+            raise
 
     def stop(self):
         if self._mongod_process:

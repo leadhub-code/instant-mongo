@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from errno import ECONNREFUSED
 from pathlib import Path
 import pymongo
 from threading import enumerate as enumerate_threads
@@ -88,9 +89,9 @@ def tcp_conns_accepted_on_port(port, host='127.0.0.1'):
     except socket.timeout:
         return False
     except OSError as e:
-        if e.errno not in (111, 61):
+        if e.errno != ECONNREFUSED:
             # re-raise exception if it is not Connection Refused
-            raise Exception('Unexpected exception: {!r}'.format(e)) from e
+            raise Exception(f'Unexpected exception: {e!r}') from e
         return False
     else:
         c.close()
