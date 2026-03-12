@@ -233,8 +233,10 @@ class InstantMongoDB:
     @property
     def mongodb_uri(self) -> str:
         '''
-        For backwards compatibility. Please use `mongo_uri` attribute instead.
+        Deprecated. Use `mongo_uri` attribute instead.
         '''
+        from warnings import warn
+        warn('mongodb_uri is deprecated, use mongo_uri instead', DeprecationWarning, stacklevel=2)
         return self.mongo_uri
 
     def drop_everything(self):

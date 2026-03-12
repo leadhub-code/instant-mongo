@@ -42,17 +42,17 @@ Wrappery ponechány záměrně.
 
 Starý monkey-patch `_run` metody na třídě `PeriodicExecutor` odstraněn (nefungoval pro pymongo >= 4.9). Nahrazen jednodušším patchem konstanty `pymongo.common.MIN_HEARTBEAT_INTERVAL` (0.5 → 0.02) v `InstantMongoDB.start()`. Patch se aplikuje defenzivně — pouze pokud má konstanta očekávanou hodnotu.
 
-### 8. `mongodb_uri` backwards-compat property
+### 8. ~~`mongodb_uri` backwards-compat property~~ OPRAVENO
 
-`instant_mongo.py:219-223`: Existuje od verze 1.0.7. Changelog zmiňuje breaking changes — pokud už se lámou věci, je otázka jestli má smysl tento alias udržovat. Minimálně by mohl vydat `DeprecationWarning`.
+Přidán `DeprecationWarning` s `stacklevel=2` při přístupu k `mongodb_uri`.
 
 
 Konfigurace / packaging
 -----------------------
 
-### 9. `requires-python = ">=3.7"` — příliš nízko
+### 9. ~~`requires-python = ">=3.7"` — příliš nízko~~ PONECHÁNO
 
-`pyproject.toml:10`: Python 3.7 je EOL od 2023-06. CI testuje minimum 3.9. Deklarovat 3.7 podporu bez testování je zavádějící. Doporučuji `>=3.9`.
+Kód nepoužívá nic specifického pro 3.9+, zvýšení by zbytečně vyloučilo uživatele.
 
 ### 10. `build-system` — setuptools, ale projekt používá uv
 
