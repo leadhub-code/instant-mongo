@@ -8,14 +8,13 @@ version = "1.0.7"
 description = "MongoDB runner for integration (and other) tests"
 readme = "README.md"
 requires-python = ">=3.7"
-license = {text = "MIT"}
+license = "MIT"
 authors = [
     {name = "Petr Messner", email = "petr.messner@gmail.com"}
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
@@ -27,8 +26,12 @@ classifiers = [
 keywords = ["instant", "MongoDB", "testing"]
 dependencies = ["pymongo"]
 
-[project.optional-dependencies]
-test = ["pytest", "pytest-asyncio"]
+[dependency-groups]
+dev = [
+    "flake8>=5.0.4",
+    "pytest>=7.4.4",
+    "pytest-asyncio>=0.21.2",
+]
 
 [tool.setuptools.packages.find]
 exclude = ["doc", "tests"]

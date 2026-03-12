@@ -2,6 +2,7 @@
 *.egg-info
 __pycache__
 venv
+venv-check-dist
 .venv
 local
 .cache

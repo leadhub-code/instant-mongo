@@ -1,22 +1,27 @@
-python3=python3
-venv_dir=venv
+uv=uv
 pytest_args=-vv --tb=short --log-cli-level=INFO
+python3=python3
 
-check: $(venv_dir)/packages-installed
-	PYTHONDONTWRITEBYTECODE=1 \
-		$(venv_dir)/bin/python3 -m pytest $(pytest_args) tests
+check:
+	$(uv) run pytest $(pytest_args) tests
 
-lint: $(venv_dir)/packages-installed
-	test -x $(venv_dir)/bin/flake8 || $(venv_dir)/bin/pip install flake8
-	$(venv_dir)/bin/flake8 . --show-source --statistics
+lint:
+	$(uv) run flake8 . --show-source --statistics
 
-venv: $(venv_dir)/packages-installed
+venv:
+	$(uv) sync --dev
 
-$(venv_dir)/packages-installed: pyproject.toml
-	test -d $(venv_dir) || $(python3) -m venv $(venv_dir)
-	$(venv_dir)/bin/pip install -U pip wheel
-	$(venv_dir)/bin/pip install -e .
-	$(venv_dir)/bin/pip install -e .[test]
-	touch $@
+dist:
+	rm -rf dist
+	$(uv) build
+	test -f dist/instant_mongo-*.whl
 
-.PHONY: venv
+check-dist:
+	test -f dist/instant_mongo-*.whl
+	rm -rf venv-check-dist
+	$(python3) -m venv venv-check-dist
+	venv-check-dist/bin/pip install dist/instant_mongo-*.whl
+	venv-check-dist/bin/python -c 'import instant_mongo; print("ok:", instant_mongo.__version__)'
+	rm -rf venv-check-dist
+
+.PHONY: check lint venv dist
