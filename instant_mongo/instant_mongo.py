@@ -18,7 +18,7 @@ except ImportError:
     AsyncMongoClient = None
 
 from .port_guard import PortGuard
-from .util import patch_pymongo_periodic_executor, drop_all_dbs
+from .util import drop_all_dbs
 from .util import tcp_conns_accepted_on_port, to_path
 
 
@@ -88,6 +88,7 @@ class InstantMongoDB:
         self.stop()
 
     def start(self):
+        self._patch_pymongo_min_heartbeat_interval()
         assert self._exit_stack is None
         self._exit_stack = ExitStack()
         try:
@@ -141,6 +142,14 @@ class InstantMongoDB:
                         f'Replica set primary not elected within {self.wait_timeout}s')
                 sleep(.01)
 
+    @staticmethod
+    def _patch_pymongo_min_heartbeat_interval():
+        '''Speed up pymongo MongoClient shutdown by reducing the periodic
+        executor sleep interval from 0.5s to 0.02s.'''
+        import pymongo.common
+        if getattr(pymongo.common, 'MIN_HEARTBEAT_INTERVAL', None) == 0.5:
+            pymongo.common.MIN_HEARTBEAT_INTERVAL = 0.02
+
     def stop(self):
         if self._client is not None:
             logger.debug('Calling self._client.close() pid=%d', getpid())
@@ -189,9 +198,7 @@ class InstantMongoDB:
 
         The instance will not be cached and will be created anew on each call.
         '''
-        # TODO: remove patch_pymongo_periodic_executor - it was used only for old pymongo versions
-        with patch_pymongo_periodic_executor():
-            return MongoClient(self.mongo_uri, **kwargs)
+        return MongoClient(self.mongo_uri, **kwargs)
 
     def get_async_client(self, **kwargs) -> AsyncMongoClient:
         '''

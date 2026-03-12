@@ -249,6 +249,7 @@ Changelog
 
 - Update readme
 - Switch to uv for dependency management and builds
+- Replace `patch_pymongo_periodic_executor` with simpler `pymongo.common.MIN_HEARTBEAT_INTERVAL` patch (0.5s → 0.02s) for faster MongoClient shutdown across all pymongo versions
 
 ### 1.0.7 (2026-02-15)
 

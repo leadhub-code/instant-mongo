@@ -34,13 +34,13 @@ README byl přepsán na URI-based vzor, ale tento test stále používá starý 
 Zastaralý kód / dead code
 --------------------------
 
-### 6. Kompatibilní wrappery pro pymongo < 3.6/3.7
+### 6. ~~Kompatibilní wrappery pro pymongo < 3.6/3.7~~ PONECHÁNO
 
-`util.py:14-32`: `list_database_names()`, `list_collection_names()`, `count_documents()` — podpora pro pymongo < 3.6 a < 3.7. CI testuje minimum pymongo 3.13.0, `requires-python = ">=3.7"`. Tyto wrappery jsou mrtvý kód. Navíc `count_documents` zastíní builtin `filter`.
+Wrappery ponechány záměrně.
 
-### 7. `patch_pymongo_periodic_executor` — otázka užitečnosti
+### 7. ~~`patch_pymongo_periodic_executor` — otázka užitečnosti~~ OPRAVENO
 
-`util.py:49-81`: Patch se nedá revertovat (zakomentovaný `pex._run = original_run`), pro pymongo >= 4.9 je disabled (AttributeError), a v kódu je TODO komentář o jeho odstranění (`instant_mongo.py:184`). Test ho skipuje pro pymongo > 4.9. Zvážit kompletní odstranění.
+Starý monkey-patch `_run` metody na třídě `PeriodicExecutor` odstraněn (nefungoval pro pymongo >= 4.9). Nahrazen jednodušším patchem konstanty `pymongo.common.MIN_HEARTBEAT_INTERVAL` (0.5 → 0.02) v `InstantMongoDB.start()`. Patch se aplikuje defenzivně — pouze pokud má konstanta očekávanou hodnotu.
 
 ### 8. `mongodb_uri` backwards-compat property
 
