@@ -46,7 +46,6 @@ def drop_all_collections(db):
         db[c_name].drop()
 
 
-
 def tcp_conns_accepted_on_port(port, host='127.0.0.1'):
     import socket
     try:

@@ -15,6 +15,7 @@ class PortGuard:
     """
 
     def __init__(self, start_port=19000):
+        self._start_port = start_port
         self._next_port = start_port
         self._guard_sockets = []
 
@@ -46,6 +47,8 @@ class PortGuard:
                 if s_app:
                     s_app.close()
                 self._next_port += 2
+                if self._next_port >= 65535:
+                    self._next_port = self._start_port
                 continue
             self._guard_sockets.append(s_guard)
             return (app_port, s_app)

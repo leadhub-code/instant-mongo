@@ -18,9 +18,9 @@ Opraveno na obou místech (`instant_mongo.py` i `test_basic_usage.py`) — `rais
 
 `_wait_for_accepting_tcp_conns` i `_init_rs` nyní používají `monotonic_ns()` s deadlinem odvozeným z `self.wait_timeout` (výchozí 10s). Po překročení timeoutu vyhodí `TimeoutError`.
 
-### 3. `PortGuard` — neomezený rozsah portů
+### 3. ~~`PortGuard` — neomezený rozsah portů~~ OPRAVENO
 
-`port_guard.py:28-49`: `get_listening_socket` nemá horní limit portů. Pokud je spousta portů obsazených, bude zkoušet donekonečna (porty se incrementují po 2 od 19000). V extrémním případě přeteče přes 65535.
+Přidán wraparound — po dosažení portu 65535 se `_next_port` vrátí na `_start_port`. Rozsah ~23 000 párů portů je v praxi dostatečný.
 
 ### 4. `drop_all_dbs` dropuje databáze po kolekcích, ne celé
 
