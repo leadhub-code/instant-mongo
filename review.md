@@ -26,9 +26,9 @@ Opraveno na obou místech (`instant_mongo.py` i `test_basic_usage.py`) — `rais
 
 `util.py:35-46`: `drop_all_dbs` iteruje databáze ale volá `drop_all_collections`, ne `client.drop_database()`. To znamená, že prázdné databáze zůstanou. Jméno funkce je tak mírně zavádějící.
 
-### 5. `test_fork_safe_readme_example.py` — neaktualizován podle README
+### 5. ~~`test_fork_safe_readme_example.py` — neaktualizován podle README~~ OPRAVENO
 
-README byl přepsán na URI-based vzor, ale tento test stále používá starý `mongo_client_factory` / lambda vzor. Měly by být synchronizované.
+Test přepsán na URI-based vzor odpovídající aktuálnímu README.
 
 
 Zastaralý kód / dead code

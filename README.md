@@ -158,6 +158,7 @@ from os import environ
 from pymongo import MongoClient
 from pytest import fixture
 from instant_mongo import InstantMongoDB
+from instant_mongo.util import join_pymongo_threads
 
 @fixture(scope='session')
 def mongo_uri(tmpdir_factory):
@@ -176,6 +177,7 @@ def db(mongo_uri):
         db_name = f'test_{ObjectId()}'
         yield client[db_name]
         client.drop_database(db_name)
+    join_pymongo_threads()  # wait for pymongo background threads to finish
 
 
 # test_smoke.py
