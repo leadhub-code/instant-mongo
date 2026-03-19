@@ -54,9 +54,9 @@ Konfigurace / packaging
 
 Kód nepoužívá nic specifického pro 3.9+, zvýšení by zbytečně vyloučilo uživatele.
 
-### 10. `build-system` — setuptools, ale projekt používá uv
+### 10. ~~`build-system` — setuptools, ale projekt používá uv~~ OPRAVENO
 
-`pyproject.toml:1-3`: Build backend je stále setuptools. Pokud se přešlo na uv, stojí za zvážení přechod na modernější backend (hatchling, flit apod.), ale setuptools funguje dobře.
+`pyproject.toml:1-3`: Build backend přepnut ze setuptools na hatchling.
 
 ### 11. Chybí `py.typed` marker a type annotations
 
