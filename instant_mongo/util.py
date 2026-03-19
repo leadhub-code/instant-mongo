@@ -34,9 +34,9 @@ def count_documents(collection, filter=None, **kwargs):
 
 def drop_all_dbs(client):
     for db_name in sorted(list_database_names(client)):
-        if db_name == 'local':
+        if db_name in ('admin', 'config', 'local'):
             continue
-        drop_all_collections(client[db_name])
+        client.drop_database(db_name)
 
 
 def drop_all_collections(db):

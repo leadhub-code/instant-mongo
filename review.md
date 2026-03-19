@@ -22,9 +22,9 @@ Opraveno na obou místech (`instant_mongo.py` i `test_basic_usage.py`) — `rais
 
 Přidán wraparound — po dosažení portu 65535 se `_next_port` vrátí na `_start_port`. Rozsah ~23 000 párů portů je v praxi dostatečný.
 
-### 4. `drop_all_dbs` dropuje databáze po kolekcích, ne celé
+### 4. ~~`drop_all_dbs` dropuje databáze po kolekcích, ne celé~~ OPRAVENO
 
-`util.py:35-46`: `drop_all_dbs` iteruje databáze ale volá `drop_all_collections`, ne `client.drop_database()`. To znamená, že prázdné databáze zůstanou. Jméno funkce je tak mírně zavádějící.
+`drop_all_dbs` nyní volá `client.drop_database()` místo `drop_all_collections()`. Databáze se mažou celé, prázdné databáze nezůstávají. `drop_all_collections` ponechána jako samostatná utilita.
 
 ### 5. ~~`test_fork_safe_readme_example.py` — neaktualizován podle README~~ OPRAVENO
 

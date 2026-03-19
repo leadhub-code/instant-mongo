@@ -9,7 +9,7 @@ from subprocess import check_call
 from threading import active_count
 
 from instant_mongo import InstantMongoDB
-from instant_mongo.util import count_documents, join_pymongo_threads
+from instant_mongo.util import count_documents, drop_all_collections, join_pymongo_threads
 
 
 logger = getLogger(__name__)
@@ -78,6 +78,31 @@ def test_instant_mongo_drop_everything_method_will_delete_everything(needs_mongo
         im.drop_everything()
         assert count_documents(im.db['testcoll']) == 0
         assert 'testcoll' not in im.db.list_collection_names()
+
+
+def test_instant_mongo_drop_everything_removes_databases(needs_mongod, tmp_path):
+    with InstantMongoDB(tmp_path) as im:
+        im.client['mydb1']['coll'].insert_one({'a': 1})
+        im.client['mydb2']['coll'].insert_one({'b': 2})
+        db_names = im.client.list_database_names()
+        assert 'mydb1' in db_names
+        assert 'mydb2' in db_names
+        im.drop_everything()
+        db_names_after = im.client.list_database_names()
+        assert 'mydb1' not in db_names_after
+        assert 'mydb2' not in db_names_after
+
+
+def test_drop_all_collections(needs_mongod, tmp_path):
+    with InstantMongoDB(tmp_path) as im:
+        im.db['coll_a'].insert_one({'a': 1})
+        im.db['coll_b'].insert_one({'b': 2})
+        assert 'coll_a' in im.db.list_collection_names()
+        assert 'coll_b' in im.db.list_collection_names()
+        drop_all_collections(im.db)
+        names = im.db.list_collection_names()
+        assert 'coll_a' not in names
+        assert 'coll_b' not in names
 
 
 def test_instant_mongo_get_new_test_db_method(needs_mongod, tmp_path):
