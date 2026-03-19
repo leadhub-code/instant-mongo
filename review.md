@@ -78,9 +78,9 @@ Testy
 
 `test_async_usage.py`: `needs_mongod` je module-scoped fixture, ale je závislostí `instant_mongo` fixture, ne přímo testů. Pokud by se fixture přeuspořádaly, mohlo by dojít k chybě. Funguje, ale je to křehké.
 
-### 15. Chybí test pro `follow_logs=True`
+### 15. ~~Chybí test pro `follow_logs=True`~~ OPRAVENO
 
-`OutputFileReader` (třída pro sledování logů mongod) nemá žádný dedikovaný test. Žádný existující test nespouští `InstantMongoDB` s `follow_logs=True`. Chyba v parsování výstupu nebo v thread lifecycle by prošla nepovšimnuta.
+Přidán `test_follow_logs` — spouští `InstantMongoDB` s `follow_logs=True`, ověřuje, že se mongod logy objeví v `caplog` a že po zavření nezůstanou žádné thready.
 
 ### 16. Chybí testy pro chybové stavy startu
 

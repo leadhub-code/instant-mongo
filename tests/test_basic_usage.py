@@ -142,6 +142,18 @@ def test_transactions(needs_mongod, tmp_path):
             raise
 
 
+def test_follow_logs(needs_mongod, tmp_path, caplog):
+    import logging
+    with caplog.at_level(logging.DEBUG):
+        with InstantMongoDB(tmp_path, follow_logs=True) as im:
+            im.db['testcoll'].insert_one({'foo': 'bar'})
+            assert any('mongod' in r.message for r in caplog.records), \
+                'Expected mongod log output in captured log records'
+    # After closing, OutputFileReader threads should be stopped
+    join_pymongo_threads()
+    assert active_count() == 1
+
+
 def test_no_leftover_threads_are_running_after_instant_mongo_is_closed(needs_mongod, tmp_path):
     assert active_count() == 1
     with InstantMongoDB(tmp_path) as im:
