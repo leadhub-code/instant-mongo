@@ -44,12 +44,16 @@ class InstantMongoDB:
 
     wait_timeout = 10
 
-    def __init__(self, data_parent_dir=None, *, data_dir=None, port=None, as_replica_set=False, delete_data_dir_on_exit=None, follow_logs=False):
+    def __init__(
+            self, data_parent_dir=None, *, data_dir=None, port=None,
+            as_replica_set=False, delete_data_dir_on_exit=None,
+            follow_logs=False, mongod_bin='mongod'):
         self.logger = logger
         self.port: Optional[int] = port
         self.as_replica_set = as_replica_set
         self.delete_data_dir_on_exit = delete_data_dir_on_exit
         self.follow_logs = follow_logs
+        self.mongod_bin = mongod_bin
         self._exit_stack = None
         # figure out self.data_dir
         if data_dir:
@@ -101,7 +105,8 @@ class InstantMongoDB:
                 data_dir=self.data_dir,
                 port=self.port,
                 as_replica_set=self.as_replica_set,
-                follow_logs=self.follow_logs)
+                follow_logs=self.follow_logs,
+                mongod_bin=self.mongod_bin)
             self._exit_stack.callback(self._mongodb_process.stop)
             self._mongodb_process.start()
             self._wait_for_accepting_tcp_conns()
@@ -252,7 +257,7 @@ class InstantMongoDB:
 
 class MongoDBProcess:
 
-    def __init__(self, logger, data_dir, port, as_replica_set, follow_logs):
+    def __init__(self, logger, data_dir, port, as_replica_set, follow_logs, mongod_bin='mongod'):
         self._logger = logger
         self._data_dir = data_dir.resolve()
         self._stdout_path = data_dir / 'mongod-stdout.log'
@@ -263,12 +268,13 @@ class MongoDBProcess:
         self._stderr_reader = None
         self._as_replica_set = as_replica_set
         self._follow_logs = follow_logs
+        self._mongod_bin = mongod_bin
 
     def start(self):
         try:
             assert self._mongod_process is None
             cmd = [
-                'mongod',
+                self._mongod_bin,
                 '--dbpath', str(self._data_dir),
                 '--port', str(self._port),
                 '--bind_ip', '127.0.0.1',

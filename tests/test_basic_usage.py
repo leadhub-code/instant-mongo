@@ -175,3 +175,9 @@ def test_no_threads_are_started(needs_mongod, tmp_path):
         assert active_count() == 1
     # After
     assert active_count() == 1
+
+
+def test_start_with_invalid_mongod_binary(tmp_path):
+    with raises(FileNotFoundError):
+        with InstantMongoDB(tmp_path, mongod_bin='nonexistent-mongod-binary'):
+            pass
