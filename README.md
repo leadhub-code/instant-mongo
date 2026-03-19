@@ -16,15 +16,15 @@ $ pip install https://github.com/leadhub-code/instant-mongo/archive/master.zip
 Install specific version:
 
 ```sh
-$ pip install https://github.com/leadhub-code/instant-mongo/archive/v1.0.7.zip
+$ pip install https://github.com/leadhub-code/instant-mongo/archive/v1.1.0.zip
 # or
-$ pip install git+https://github.com/leadhub-code/instant-mongo.git@v1.0.7
+$ pip install git+https://github.com/leadhub-code/instant-mongo.git@v1.1.0
 ```
 
 Or add this line to your `requirements.txt`:
 
 ```
-instant-mongo @ https://github.com/leadhub-code/instant-mongo/archive/v1.0.7.zip
+instant-mongo @ https://github.com/leadhub-code/instant-mongo/archive/v1.1.0.zip
 ```
 
 
@@ -206,7 +206,7 @@ Context manager that starts and stops a temporary MongoDB server.
 ```python
 with InstantMongoDB(data_parent_dir=None, *, data_dir=None, port=None,
                     as_replica_set=False, delete_data_dir_on_exit=None,
-                    follow_logs=False) as im:
+                    follow_logs=False, mongod_bin='mongod') as im:
     ...
 ```
 
@@ -218,6 +218,7 @@ with InstantMongoDB(data_parent_dir=None, *, data_dir=None, port=None,
 - `as_replica_set` — if `True`, MongoDB is started as a single-node replica set (required for transactions).
 - `delete_data_dir_on_exit` — if `True` (or `None` and no `data_dir` is provided), the data directory is deleted when the context manager exits.
 - `follow_logs` — if `True`, `mongod` stdout/stderr will be read (in background threads) and forwarded to Python logging.
+- `mongod_bin` — path or name of the `mongod` binary (default: `'mongod'`).
 
 **Properties:**
 
@@ -249,10 +250,16 @@ Changelog
 
 ### Development version
 
-- Update readme
-- Switch to uv for dependency management and builds
+### 1.1.0 (2026-03-19)
+
+- Fix `drop_all_dbs` to drop entire databases instead of just collections
+- Add `mongod_bin` parameter to allow overriding the `mongod` binary path
+- Switch build backend from setuptools to hatchling
 - Replace `patch_pymongo_periodic_executor` with simpler `pymongo.common.MIN_HEARTBEAT_INTERVAL` patch (0.5s → 0.02s) for faster MongoClient shutdown across all pymongo versions
 - Add `DeprecationWarning` to `mongodb_uri` property (use `mongo_uri` instead)
+- Fix `PortGuard` port overflow by adding wraparound at 65535
+- Add tests for `follow_logs=True`, `drop_all_collections`, error handling on start failure
+- Switch to uv for dependency management and builds
 
 ### 1.0.7 (2026-02-15)
 
