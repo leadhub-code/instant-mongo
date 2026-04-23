@@ -161,13 +161,13 @@ from instant_mongo import InstantMongoDB
 from instant_mongo.util import join_pymongo_threads
 
 @fixture(scope='session')
-def mongo_uri(tmpdir_factory):
+def mongo_uri(tmp_path_factory):
     if environ.get('TEST_MONGO_PORT'):
         # Use already running MongoDB instance (e.g. in Github Actions)
         yield f'mongodb://127.0.0.1:{int(environ["TEST_MONGO_PORT"])}'
     else:
         # Run temporary MongoDB instance using instant-mongo
-        temp_dir = tmpdir_factory.mktemp('instant-mongo')
+        temp_dir = tmp_path_factory.mktemp('instant-mongo')
         with InstantMongoDB(data_parent_dir=temp_dir, follow_logs=False) as im:
             yield im.mongo_uri
 
