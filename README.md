@@ -256,6 +256,10 @@ Projects helping with testing of MongoDB-based applications:
 Changelog
 ---------
 
+### Development version
+
+- No changes yet
+
 ### 1.2.0 (2026-09-04)
 
 - Publish wheel and sdist to [GitHub Releases](https://github.com/leadhub-code/instant-mongo/releases) via a release workflow; the recommended installation is now the wheel from Releases

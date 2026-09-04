@@ -13,15 +13,29 @@ MongoDB runner for integration tests.
 - Run single test: `uv run pytest tests/test_basic_usage.py::test_name -v`
 - Run all tests verbose: `make`
 
+## Changelog
+
+- `README.md` has a `Changelog` section. The topmost entry is `### Development version`
+  and collects changes since the last release.
+- Whenever you make a user-visible change (behaviour, API, parameters, CLI, dependencies,
+  supported versions), add a bullet to `### Development version`. Put breaking changes
+  under a `**Breaking changes:**` sub-heading within that entry.
+- If the entry only contains the `- No changes yet` placeholder, replace the placeholder
+  with the first real bullet.
+
 ## Releasing
 
 Version is defined in two places — keep them in sync:
 - `pyproject.toml` (`version = "x.y.z"`)
 - `instant_mongo/__init__.py` (`__version__ = 'x.y.z'`)
 
-Also update:
-- `README.md` — installation URLs (3 places) and changelog
-- Create git tag: `git tag vX.Y.Z` and push it: `git push origin vX.Y.Z`
+Also update `README.md`:
+- installation URLs (3 places)
+- changelog: rename `### Development version` to `### x.y.z (YYYY-MM-DD)`, then add a new
+  empty `### Development version` entry above it with the `- No changes yet` placeholder
+
+Commit on `master`, then create the git tag and push it:
+`git tag vX.Y.Z && git push origin master vX.Y.Z`
 
 Pushing the tag triggers `.github/workflows/release.yml`, which builds the wheel
 and sdist, checks that the package version matches the tag, and creates a GitHub
