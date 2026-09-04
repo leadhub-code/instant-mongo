@@ -57,6 +57,7 @@ class InstantMongoDB:
         self.follow_logs = follow_logs
         self.mongod_bin = mongod_bin or environ.get('IM_MONGOD_BIN') or 'mongod'
         self._exit_stack = None
+        self._started = False
         # figure out self.data_dir
         if data_dir:
             self.data_dir = to_path(data_dir)
@@ -94,8 +95,14 @@ class InstantMongoDB:
         self.stop()
 
     def start(self):
+        '''
+        Starts the MongoDB process. An instance can be started only once;
+        to run MongoDB again after stop(), create a new InstantMongoDB instance.
+        '''
+        if self._started:
+            raise RuntimeError('InstantMongoDB instance was already started and cannot be restarted')
+        self._started = True
         self._patch_pymongo_min_heartbeat_interval()
-        assert self._exit_stack is None
         self._exit_stack = ExitStack()
         try:
             self._prepare_data_dir()

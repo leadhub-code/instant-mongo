@@ -195,6 +195,16 @@ def test_start_fails_when_port_is_occupied_by_another_process(needs_mongod, tmp_
     assert active_count() == 1
 
 
+def test_instance_cannot_be_restarted(needs_mongod, tmp_path):
+    im = InstantMongoDB(tmp_path)
+    im.start()
+    with raises(RuntimeError, match='cannot be restarted'):
+        im.start()
+    im.stop()
+    with raises(RuntimeError, match='cannot be restarted'):
+        im.start()
+
+
 def test_start_with_invalid_mongod_binary(tmp_path):
     with raises(FileNotFoundError):
         with InstantMongoDB(tmp_path, mongod_bin='nonexistent-mongod-binary'):

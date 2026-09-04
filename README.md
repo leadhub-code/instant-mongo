@@ -233,7 +233,7 @@ with InstantMongoDB(data_parent_dir=None, *, data_dir=None, port=None,
 - `im.get_new_test_db()` → `pymongo.database.Database` — returns a database with a randomly generated name, useful for test isolation.
 - `im.close_client()` — closes the cached client (if any). The client will be recreated on next access to `im.client`.
 - `im.drop_everything()` — drops all databases and collections (except internal ones). Intended for cleanup between tests.
-- `im.start()` / `im.stop()` — start and stop the MongoDB process manually (normally handled by the context manager).
+- `im.start()` / `im.stop()` — start and stop the MongoDB process manually (normally handled by the context manager). An instance can be started only once; `start()` raises `RuntimeError` when called again, even after `stop()`.
 
 ### Environment variables
 
@@ -261,6 +261,7 @@ Changelog
 - Add `IM_MONGOD_BIN` environment variable as a fallback for the `mongod_bin` parameter
 - Verify that `mongod` responds to `ping` after its port opens - fixes false success when the given `port` is already used by another process
 - `stop()` sends SIGKILL to `mongod` if it does not exit within 30 s after SIGTERM, instead of waiting forever
+- `start()` raises `RuntimeError` when called on an instance that was already started - restarting an instance after `stop()` is not supported
 
 ### 1.1.0 (2026-03-19)
 
