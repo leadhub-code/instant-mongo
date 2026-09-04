@@ -12,26 +12,33 @@ on:
         type: string
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
 
     - name: Resolve tag
       id: tag
+      # Pass the untrusted input through env rather than interpolating it
+      # into the script, so it cannot inject shell commands.
+      env:
+        INPUT_TAG: ${{ inputs.tag }}
+        EVENT_NAME: ${{ github.event_name }}
       run: |
-        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-          tag="${{ inputs.tag }}"
+        if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+          tag="$INPUT_TAG"
         else
-          tag="${GITHUB_REF_NAME}"
+          tag="$GITHUB_REF_NAME"
         fi
-        case "$tag" in
-          v[0-9]*) ;;
-          *) echo "Tag must look like vX.Y.Z, got: $tag"; exit 1 ;;
-        esac
+        if ! printf '%s' "$tag" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+          echo "Tag must look like vX.Y.Z, got: $tag"
+          exit 1
+        fi
         echo "tag=$tag" >> "$GITHUB_OUTPUT"
         echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
 
@@ -53,18 +60,21 @@ jobs:
         ls -l dist
 
     - name: Check that the package version matches the tag
+      env:
+        VERSION: ${{ steps.tag.outputs.version }}
       run: |
-        version="${{ steps.tag.outputs.version }}"
-        test -f "dist/instant_mongo-${version}-py3-none-any.whl"
-        test -f "dist/instant_mongo-${version}.tar.gz"
+        test -f "dist/instant_mongo-${VERSION}-py3-none-any.whl"
+        test -f "dist/instant_mongo-${VERSION}.tar.gz"
 
     - name: Smoke test the wheel
+      env:
+        VERSION: ${{ steps.tag.outputs.version }}
       run: |
         python3 -m venv venv-check
         venv-check/bin/pip install dist/instant_mongo-*.whl
         venv-check/bin/python -c '
-        import instant_mongo
-        assert instant_mongo.__version__ == "${{ steps.tag.outputs.version }}", instant_mongo.__version__
+        import os, instant_mongo
+        assert instant_mongo.__version__ == os.environ["VERSION"], instant_mongo.__version__
         print("ok:", instant_mongo.__version__)
         '
 
@@ -74,6 +84,7 @@ jobs:
         tag_name: ${{ steps.tag.outputs.tag }}
         name: ${{ steps.tag.outputs.tag }}
         generate_release_notes: true
+        fail_on_unmatched_files: true
         files: |
           dist/instant_mongo-*.whl
           dist/instant_mongo-*.tar.gz
