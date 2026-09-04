@@ -2,7 +2,7 @@ from errno import ECONNREFUSED
 from logging import getLogger
 from pathlib import Path
 from socket import create_connection
-from struct import pack, unpack
+from struct import pack, unpack, error as StructError
 import bson
 import pymongo
 from threading import enumerate as enumerate_threads
@@ -11,6 +11,7 @@ from threading import enumerate as enumerate_threads
 logger = getLogger('instant_mongo')
 
 OP_MSG = 2013  # MongoDB wire protocol opcode (MongoDB 3.6+)
+MAX_MESSAGE_SIZE = 48 * 1024 * 1024  # maxMessageSizeBytes of MongoDB servers
 
 
 def to_path(p):
@@ -71,19 +72,19 @@ def tcp_conns_accepted_on_port(port, host='127.0.0.1'):
         return True
 
 
-def mongo_ping(port, host='127.0.0.1', timeout=0.5):
+def mongo_command(port, command, host='127.0.0.1', timeout=0.5, db='admin'):
     '''
-    Send the `ping` command to a MongoDB server over a plain socket using
-    the wire protocol (OP_MSG) and return True if the server replies with ok=1.
+    Send a single command to a MongoDB server over a plain socket using
+    the wire protocol (OP_MSG) and return the reply document.
 
     Unlike MongoClient this starts no background threads, so it can be used
     during start-up without leaving any threads behind (fork safety).
 
-    Any connection, timeout or protocol error results in False - the caller
+    Any connection, timeout or protocol error results in None - the caller
     is expected to retry until its own deadline.
     '''
     request_id = 1
-    body = bson.encode({'ping': 1, '$db': 'admin'})
+    body = bson.encode({**command, '$db': db})
     # header: messageLength, requestID, responseTo, opCode; then flagBits and
     # a single body section (kind 0) with one BSON document
     request = pack('<iiiiiB', 16 + 4 + 1 + len(body), request_id, 0, OP_MSG, 0, 0) + body
@@ -92,29 +93,50 @@ def mongo_ping(port, host='127.0.0.1', timeout=0.5):
             s.sendall(request)
             length, _, response_to, op_code = unpack('<iiii', _recv_exactly(s, 16))
             if op_code != OP_MSG or response_to != request_id:
-                logger.debug('Ping: unexpected reply header (opCode=%r, responseTo=%r)', op_code, response_to)
-                return False
+                logger.debug('Unexpected reply header from %s:%s (opCode=%r, responseTo=%r)', host, port, op_code, response_to)
+                return None
+            # payload: flagBits (4 bytes), section kind (1 byte), BSON document (5+ bytes)
+            if not 16 + 4 + 1 + 5 <= length <= MAX_MESSAGE_SIZE:
+                logger.debug('Unexpected reply length from %s:%s: %r', host, port, length)
+                return None
             payload = _recv_exactly(s, length - 16)
-            # payload: flagBits (4 bytes), section kind (1 byte), BSON document
             if payload[4] != 0:
-                logger.debug('Ping: unexpected section kind %r', payload[4])
-                return False
+                logger.debug('Unexpected section kind %r in reply from %s:%s', payload[4], host, port)
+                return None
             doc_length, = unpack('<i', payload[5:9])
-            reply = bson.decode(payload[5:5 + doc_length])
-    except (OSError, IndexError, ValueError, bson.errors.InvalidBSON) as e:
-        # ValueError also covers struct.error
-        logger.debug('Ping to %s:%s failed: %r', host, port, e)
-        return False
-    if reply.get('ok') != 1:
-        logger.debug('Ping: server replied %r', reply)
-        return False
-    return True
+            return bson.decode(payload[5:5 + doc_length])
+    except (OSError, IndexError, StructError, bson.errors.InvalidBSON) as e:
+        logger.debug('Command %r to %s:%s failed: %r', next(iter(command)), host, port, e)
+        return None
+
+
+def mongo_ping(port, host='127.0.0.1', timeout=0.5):
+    '''
+    Return True if a MongoDB server on the given port replies to `ping` with ok=1.
+    See mongo_command() for details.
+    '''
+    reply = mongo_command(port, {'ping': 1}, host=host, timeout=timeout)
+    return reply is not None and reply.get('ok') == 1
+
+
+def mongo_server_pid(port, host='127.0.0.1', timeout=0.5):
+    '''
+    Return the PID of the MongoDB server listening on the given port
+    (from `serverStatus`), or None if it cannot be determined.
+    See mongo_command() for details.
+    '''
+    # disable the large sections of serverStatus - only the pid is needed
+    command = {'serverStatus': 1, 'metrics': 0, 'wiredTiger': 0, 'tcmalloc': 0, 'locks': 0, 'opLatencies': 0}
+    reply = mongo_command(port, command, host=host, timeout=timeout)
+    if reply is None or reply.get('ok') != 1:
+        return None
+    return reply.get('pid')
 
 
 def _recv_exactly(sock, n):
     chunks = []
     while n > 0:
-        chunk = sock.recv(n)
+        chunk = sock.recv(min(n, 1024 * 1024))
         if not chunk:
             raise ConnectionError('connection closed before the whole message was received')
         chunks.append(chunk)
