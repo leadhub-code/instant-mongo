@@ -46,13 +46,20 @@ class PortGuard:
                     s_guard.close()
                 if s_app:
                     s_app.close()
-                self._next_port += 2
-                if self._next_port >= 65535:
-                    self._next_port = self._start_port
+                self._advance()
                 continue
             self._guard_sockets.append(s_guard)
-            self._next_port += 2
+            self._advance()
             return (app_port, s_app)
+
+    def _advance(self):
+        '''
+        Move on to the next port pair, wrapping around to the start port
+        when the pair would not fit below 65536.
+        '''
+        self._next_port += 2
+        if self._next_port + 1 > 65535:
+            self._next_port = self._start_port
 
     def get_available_port(self):
         port, sock = self.get_listening_socket()

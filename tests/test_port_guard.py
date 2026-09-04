@@ -72,3 +72,10 @@ def test_close_clears_guard_sockets_list():
     assert len(pg._guard_sockets) > 0
     pg.close()
     assert pg._guard_sockets == []
+
+
+def test_next_port_wraps_around_at_the_end_of_port_range():
+    with PortGuard(start_port=65534) as pg:
+        port = pg.get_available_port()
+        assert port == 65535
+        assert pg._next_port == 65534  # wrapped around to start_port
