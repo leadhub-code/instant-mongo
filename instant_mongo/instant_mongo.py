@@ -8,7 +8,7 @@ from pymongo.database import Database
 from pymongo.errors import PyMongoError
 from re import match
 from shutil import rmtree
-from subprocess import Popen
+from subprocess import Popen, TimeoutExpired
 from tempfile import TemporaryDirectory
 from threading import Event, Thread, enumerate as enumerate_threads
 from time import sleep, time_ns, monotonic_ns
@@ -294,6 +294,9 @@ class InstantMongoDB:
 
 class MongoDBProcess:
 
+    # seconds to wait for mongod to exit after SIGTERM before sending SIGKILL
+    stop_timeout = 30
+
     def __init__(self, logger, data_dir, port, as_replica_set, follow_logs, mongod_bin='mongod'):
         self._logger = logger
         self._data_dir = data_dir.resolve()
@@ -346,7 +349,14 @@ class MongoDBProcess:
         if self._mongod_process:
             self._logger.debug('Shutting down mongod[%s]', self._mongod_process.pid)
             self._mongod_process.terminate()
-            self._mongod_process.wait()
+            try:
+                self._mongod_process.wait(timeout=self.stop_timeout)
+            except TimeoutExpired:
+                self._logger.warning(
+                    'mongod[%s] did not exit within %s s after SIGTERM, killing it',
+                    self._mongod_process.pid, self.stop_timeout)
+                self._mongod_process.kill()
+                self._mongod_process.wait()
             self._mongod_process = None
         if self._stdout_reader:
             self._stdout_reader.stop()

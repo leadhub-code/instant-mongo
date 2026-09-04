@@ -8,8 +8,10 @@ from pytest import fixture, skip, raises, mark
 from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from subprocess import check_call
 from threading import active_count
+from time import monotonic
 
 from instant_mongo import InstantMongoDB
+from instant_mongo.instant_mongo import MongoDBProcess
 from instant_mongo.util import count_documents, drop_all_collections, join_pymongo_threads
 
 
@@ -219,3 +221,20 @@ def test_mongod_bin_default(tmp_path, monkeypatch):
     assert InstantMongoDB(tmp_path).mongod_bin == 'mongod'
     monkeypatch.setenv('IM_MONGOD_BIN', '')
     assert InstantMongoDB(tmp_path).mongod_bin == 'mongod'
+
+
+def test_stop_kills_process_that_ignores_sigterm(tmp_path, monkeypatch):
+    fake_mongod = tmp_path / 'fake-mongod.sh'
+    fake_mongod.write_text('#!/bin/sh\ntrap "" TERM\nsleep 60\n')
+    fake_mongod.chmod(0o755)
+    monkeypatch.setattr(MongoDBProcess, 'stop_timeout', 0.5)
+    process = MongoDBProcess(
+        logger=logger, data_dir=tmp_path, port=0, as_replica_set=False,
+        follow_logs=False, mongod_bin=str(fake_mongod))
+    process.start()
+    popen = process._mongod_process
+    assert process.is_alive()
+    t0 = monotonic()
+    process.stop()
+    assert monotonic() - t0 < 5
+    assert popen.poll() is not None  # process is gone
