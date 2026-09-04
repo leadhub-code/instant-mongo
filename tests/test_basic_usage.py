@@ -297,7 +297,7 @@ def test_mongod_bin_default(tmp_path, monkeypatch):
 
 def test_stop_kills_process_that_ignores_sigterm(tmp_path, monkeypatch):
     fake_mongod = tmp_path / 'fake-mongod.sh'
-    fake_mongod.write_text('#!/bin/sh\ntrap "" TERM\nsleep 60\n')
+    fake_mongod.write_text('#!/bin/sh\ntrap "" TERM\nexec sleep 60\n')
     fake_mongod.chmod(0o755)
     monkeypatch.setattr(MongoDBProcess, 'stop_timeout', 0.5)
     process = MongoDBProcess(
