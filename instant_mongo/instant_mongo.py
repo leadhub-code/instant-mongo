@@ -19,7 +19,7 @@ except ImportError:
 
 from .port_guard import PortGuard
 from .util import drop_all_dbs
-from .util import mongo_ping, tcp_conns_accepted_on_port, to_path
+from .util import mongo_server_pid, tcp_conns_accepted_on_port, to_path
 
 
 logger = getLogger('instant_mongo')
@@ -135,25 +135,31 @@ class InstantMongoDB:
                 raise TimeoutError(
                     f'MongoDB did not start accepting connections within {self.wait_timeout}s')
             sleep(.01)
-        # The port may be open because some other process is listening on it
-        # (e.g. when an explicit port was given), while our mongod failed to
-        # bind and is about to exit. So verify that mongod itself answers.
-        self._wait_for_ping(deadline)
+        # The port may be open because some other process (possibly another
+        # mongod) is listening on it, e.g. when an explicit port was given,
+        # while our mongod failed to bind and is about to exit. So verify
+        # that it is our mongod process that answers on the port.
+        self._wait_for_our_mongod_answering(deadline)
         self._check_process_alive()
 
     def _check_process_alive(self):
         if not self._mongodb_process.is_alive():
             raise Exception('MongoDB process exited before it started to accept connections')
 
-    def _wait_for_ping(self, deadline):
-        # mongo_ping() talks to the server over a plain socket, so no
+    def _wait_for_our_mongod_answering(self, deadline):
+        # mongo_server_pid() talks to the server over a plain socket, so no
         # MongoClient background threads are started here (fork safety).
         while True:
             self._check_process_alive()
-            if mongo_ping(self.port):
+            pid = mongo_server_pid(self.port)
+            if pid == self._mongodb_process.pid:
                 return
+            if pid is not None:
+                self.logger.debug(
+                    'Port %s is served by another mongod (pid %s), not by ours (pid %s)',
+                    self.port, pid, self._mongodb_process.pid)
             if monotonic_ns() > deadline:
-                raise TimeoutError(f'MongoDB did not respond to ping within {self.wait_timeout}s')
+                raise TimeoutError(f'MongoDB did not respond to serverStatus within {self.wait_timeout}s')
             sleep(.01)
 
     def _init_rs(self):
@@ -359,6 +365,10 @@ class MongoDBProcess:
 
     def is_alive(self):
         return self._mongod_process.poll() is None
+
+    @property
+    def pid(self):
+        return self._mongod_process.pid
 
 
 class OutputFileReader:

@@ -259,7 +259,7 @@ Changelog
 ### Development version
 
 - Add `IM_MONGOD_BIN` environment variable as a fallback for the `mongod_bin` parameter
-- Verify that `mongod` responds to `ping` after its port opens - fixes false success when the given `port` is already used by another process
+- Verify that our `mongod` process answers on its port after it opens (via `serverStatus` pid over a plain socket) - fixes false success when the given `port` is already used by another process, including another `mongod`
 - `stop()` sends SIGKILL to `mongod` if it does not exit within 30 s after SIGTERM, instead of waiting forever
 - `start()` raises `RuntimeError` when called on an instance that was already started - restarting an instance after `stop()` is not supported
 - Lower `--wiredTigerCacheSizeGB` from 1 to 0.5 to reduce memory usage when running many instances in parallel (e.g. with pytest-xdist)

@@ -13,7 +13,7 @@ from time import monotonic
 
 from instant_mongo import InstantMongoDB
 from instant_mongo.instant_mongo import MongoDBProcess
-from instant_mongo.util import count_documents, drop_all_collections, join_pymongo_threads, mongo_command, mongo_ping
+from instant_mongo.util import count_documents, drop_all_collections, join_pymongo_threads, mongo_command, mongo_ping, mongo_server_pid
 
 
 logger = getLogger(__name__)
@@ -187,6 +187,12 @@ def test_mongo_ping(needs_mongod, tmp_path):
         assert active_count() == 1  # no threads started by the ping
 
 
+def test_mongo_server_pid(needs_mongod, tmp_path):
+    with InstantMongoDB(tmp_path) as im:
+        assert mongo_server_pid(im.port) == im._mongodb_process.pid
+        assert active_count() == 1  # no threads started
+
+
 def test_mongo_command_malformed_short_reply():
     # A listener that replies with a valid header but a payload too short
     # to contain a BSON document must not raise, just return None.
@@ -247,6 +253,18 @@ def test_instance_cannot_be_restarted(needs_mongod, tmp_path):
     im.stop()
     with raises(RuntimeError, match='cannot be restarted'):
         im.start()
+
+
+def test_start_fails_when_port_is_used_by_another_mongod(needs_mongod, tmp_path):
+    # Another mongod answers on the port, so a plain ping would succeed even
+    # though our mongod fails to bind and exits.
+    with InstantMongoDB(tmp_path / 'a') as other:
+        with raises(Exception, match='MongoDB process exited'):
+            with InstantMongoDB(tmp_path / 'b', port=other.port):
+                pass
+        assert mongo_server_pid(other.port) == other._mongodb_process.pid
+    join_pymongo_threads()
+    assert active_count() == 1
 
 
 def test_start_with_invalid_mongod_binary(tmp_path):
