@@ -5,6 +5,7 @@ MongoDB runner for integration tests.
 ## Workflow
 
 - Before committing, always run `make lint` and `make check` and fix any errors.
+- Do not add a `Claude-Session:` line (or any session URL) to commit messages.
 
 ## Commands
 
