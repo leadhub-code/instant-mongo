@@ -7,24 +7,24 @@ Run MongoDB easily in your integration tests or other code that depends on a tem
 Installation
 ------------
 
-Install current version:
+Install the wheel from [GitHub Releases](https://github.com/leadhub-code/instant-mongo/releases):
 
 ```sh
-$ pip install https://github.com/leadhub-code/instant-mongo/archive/master.zip
-```
-
-Install specific version:
-
-```sh
-$ pip install https://github.com/leadhub-code/instant-mongo/archive/v1.1.0.zip
-# or
-$ pip install git+https://github.com/leadhub-code/instant-mongo.git@v1.1.0
+$ pip install https://github.com/leadhub-code/instant-mongo/releases/download/v1.1.0/instant_mongo-1.1.0-py3-none-any.whl
 ```
 
 Or add this line to your `requirements.txt`:
 
 ```
-instant-mongo @ https://github.com/leadhub-code/instant-mongo/archive/v1.1.0.zip
+instant-mongo @ https://github.com/leadhub-code/instant-mongo/releases/download/v1.1.0/instant_mongo-1.1.0-py3-none-any.whl
+```
+
+Alternatively, install directly from the git repository (builds the package from source):
+
+```sh
+$ pip install git+https://github.com/leadhub-code/instant-mongo.git@v1.1.0
+# or the current development version:
+$ pip install https://github.com/leadhub-code/instant-mongo/archive/master.zip
 ```
 
 
