@@ -5,6 +5,7 @@ from pymongo import MongoClient
 from pymongo.database import Database
 from pymongo.errors import NotPrimaryError, OperationFailure
 from pytest import fixture, skip, raises, mark
+from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from subprocess import check_call
 from threading import active_count
 
@@ -174,6 +175,21 @@ def test_no_threads_are_started(needs_mongod, tmp_path):
         join_pymongo_threads()
         assert active_count() == 1
     # After
+    assert active_count() == 1
+
+
+def test_start_fails_when_port_is_occupied_by_another_process(needs_mongod, tmp_path):
+    # Something else is listening on the port, so the TCP check alone would
+    # pass even though mongod fails to bind and exits.
+    with socket(AF_INET, SOCK_STREAM) as blocker:
+        blocker.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        blocker.bind(('127.0.0.1', 0))
+        blocker.listen(1)
+        port = blocker.getsockname()[1]
+        with raises(Exception, match='MongoDB process exited'):
+            with InstantMongoDB(tmp_path, port=port):
+                pass
+    join_pymongo_threads()
     assert active_count() == 1
 
 

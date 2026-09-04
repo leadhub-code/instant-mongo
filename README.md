@@ -259,6 +259,7 @@ Changelog
 ### Development version
 
 - Add `IM_MONGOD_BIN` environment variable as a fallback for the `mongod_bin` parameter
+- Verify that `mongod` responds to `ping` after its port opens - fixes false success when the given `port` is already used by another process
 
 ### 1.1.0 (2026-03-19)
 
