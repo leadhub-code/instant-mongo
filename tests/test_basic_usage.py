@@ -1,4 +1,4 @@
-from logging import getLogger
+from logging import getLogger, WARNING
 from os import environ
 from pymongo import version as pymongo_version
 from pymongo import MongoClient
@@ -9,7 +9,7 @@ from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from subprocess import check_call
 from struct import pack
 from threading import active_count, Thread
-from time import monotonic
+from time import monotonic, sleep
 
 from instant_mongo import InstantMongoDB
 from instant_mongo.instant_mongo import MongoDBProcess
@@ -295,9 +295,11 @@ def test_mongod_bin_default(tmp_path, monkeypatch):
     assert InstantMongoDB(tmp_path).mongod_bin == 'mongod'
 
 
-def test_stop_kills_process_that_ignores_sigterm(tmp_path, monkeypatch):
+def test_stop_kills_process_that_ignores_sigterm(tmp_path, monkeypatch, caplog):
     fake_mongod = tmp_path / 'fake-mongod.sh'
-    fake_mongod.write_text('#!/bin/sh\ntrap "" TERM\nexec sleep 60\n')
+    # "ready" is printed only after the trap is installed; exec makes sleep
+    # the process Popen knows about, so SIGKILL hits it directly
+    fake_mongod.write_text('#!/bin/sh\ntrap "" TERM\necho ready\nexec sleep 60\n')
     fake_mongod.chmod(0o755)
     monkeypatch.setattr(MongoDBProcess, 'stop_timeout', 0.5)
     process = MongoDBProcess(
@@ -306,7 +308,16 @@ def test_stop_kills_process_that_ignores_sigterm(tmp_path, monkeypatch):
     process.start()
     popen = process._mongod_process
     assert process.is_alive()
-    t0 = monotonic()
-    process.stop()
-    assert monotonic() - t0 < 5
+    # wait until the trap is installed - the script reports it on stdout
+    stdout_log = tmp_path / 'mongod-stdout.log'
+    deadline = monotonic() + 10
+    while b'ready' not in stdout_log.read_bytes():
+        assert monotonic() < deadline, 'fake mongod did not report readiness'
+        sleep(0.01)
+    with caplog.at_level(WARNING):
+        t0 = monotonic()
+        process.stop()
+    elapsed = monotonic() - t0
     assert popen.poll() is not None  # process is gone
+    assert 0.5 <= elapsed < 5  # SIGTERM was ignored, SIGKILL sent after stop_timeout
+    assert 'did not exit within' in caplog.text
