@@ -10,19 +10,19 @@ Installation
 Install the wheel from [GitHub Releases](https://github.com/leadhub-code/instant-mongo/releases):
 
 ```sh
-$ pip install https://github.com/leadhub-code/instant-mongo/releases/download/v1.1.0/instant_mongo-1.1.0-py3-none-any.whl
+$ pip install https://github.com/leadhub-code/instant-mongo/releases/download/v1.2.0/instant_mongo-1.2.0-py3-none-any.whl
 ```
 
 Or add this line to your `requirements.txt`:
 
 ```
-instant-mongo @ https://github.com/leadhub-code/instant-mongo/releases/download/v1.1.0/instant_mongo-1.1.0-py3-none-any.whl
+instant-mongo @ https://github.com/leadhub-code/instant-mongo/releases/download/v1.2.0/instant_mongo-1.2.0-py3-none-any.whl
 ```
 
 Alternatively, install directly from the git repository (builds the package from source):
 
 ```sh
-$ pip install git+https://github.com/leadhub-code/instant-mongo.git@v1.1.0
+$ pip install git+https://github.com/leadhub-code/instant-mongo.git@v1.2.0
 # or the current development version:
 $ pip install https://github.com/leadhub-code/instant-mongo/archive/master.zip
 ```
@@ -256,13 +256,19 @@ Projects helping with testing of MongoDB-based applications:
 Changelog
 ---------
 
-### Development version
+### 1.2.0 (2026-09-04)
 
+- Publish wheel and sdist to [GitHub Releases](https://github.com/leadhub-code/instant-mongo/releases) via a release workflow; the recommended installation is now the wheel from Releases
 - Add `IM_MONGOD_BIN` environment variable as a fallback for the `mongod_bin` parameter
+- Add `scripts/install-mongod.py` for installing `mongod` into `~/.local/bin` (Debian/Ubuntu)
 - Verify that our `mongod` process answers on its port after it opens (via `serverStatus` pid over a plain socket) - fixes false success when the given `port` is already used by another process, including another `mongod`
 - `stop()` sends SIGKILL to `mongod` if it does not exit within 30 s after SIGTERM, instead of waiting forever
 - `start()` raises `RuntimeError` when called on an instance that was already started - restarting an instance after `stop()` is not supported
 - Lower `--wiredTigerCacheSizeGB` from 1 to 0.5 to reduce memory usage when running many instances in parallel (e.g. with pytest-xdist)
+
+**Breaking changes:**
+
+- Require Python 3.9+
 
 ### 1.1.0 (2026-03-19)
 
