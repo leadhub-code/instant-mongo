@@ -2,15 +2,13 @@ from contextlib import ExitStack
 from logging import getLogger
 from os import environ, getpid
 from pathlib import Path
-import pymongo
 from pymongo import MongoClient
 from pymongo.database import Database
-from pymongo.errors import PyMongoError
 from re import match
 from shutil import rmtree
 from subprocess import Popen, TimeoutExpired
 from tempfile import TemporaryDirectory
-from threading import Event, Thread, enumerate as enumerate_threads
+from threading import Event, Thread
 from time import sleep, time_ns, monotonic_ns
 from typing import Optional
 
@@ -21,7 +19,7 @@ except ImportError:
 
 from .port_guard import PortGuard
 from .util import drop_all_dbs
-from .util import tcp_conns_accepted_on_port, to_path
+from .util import mongo_ping, tcp_conns_accepted_on_port, to_path
 
 
 logger = getLogger('instant_mongo')
@@ -148,33 +146,15 @@ class InstantMongoDB:
             raise Exception('MongoDB process exited before it started to accept connections')
 
     def _wait_for_ping(self, deadline):
-        client_kwargs = dict(
-            directConnection=True, connect=True,
-            serverSelectionTimeoutMS=500, connectTimeoutMS=500, socketTimeoutMS=500)
-        if pymongo.version_tuple >= (4, 5):
-            # In the default 'stream' mode the monitor thread takes ~0.5s to exit.
-            client_kwargs['serverMonitoringMode'] = 'poll'
-        threads_before = set(enumerate_threads())
-        try:
-            while True:
-                self._check_process_alive()
-                try:
-                    with self.get_client(**client_kwargs) as client:
-                        client.admin.command('ping')
-                    return
-                except PyMongoError as e:
-                    self.logger.debug('Ping failed: %r', e)
-                if monotonic_ns() > deadline:
-                    raise TimeoutError(f'MongoDB did not respond to ping within {self.wait_timeout}s')
-                sleep(.01)
-        finally:
-            # Do not leave the ping client's background threads running (fork safety).
-            # Join only pymongo threads created during the ping - other MongoClient
-            # instances (possibly never closed) may have their own threads running.
-            # The ping client's threads exit within 0.5 s after close().
-            for t in set(enumerate_threads()) - threads_before:
-                if t.name.startswith('pymongo_'):
-                    t.join(timeout=2)
+        # mongo_ping() talks to the server over a plain socket, so no
+        # MongoClient background threads are started here (fork safety).
+        while True:
+            self._check_process_alive()
+            if mongo_ping(self.port):
+                return
+            if monotonic_ns() > deadline:
+                raise TimeoutError(f'MongoDB did not respond to ping within {self.wait_timeout}s')
+            sleep(.01)
 
     def _init_rs(self):
         if not self.as_replica_set:

@@ -12,7 +12,7 @@ from time import monotonic
 
 from instant_mongo import InstantMongoDB
 from instant_mongo.instant_mongo import MongoDBProcess
-from instant_mongo.util import count_documents, drop_all_collections, join_pymongo_threads
+from instant_mongo.util import count_documents, drop_all_collections, join_pymongo_threads, mongo_ping
 
 
 logger = getLogger(__name__)
@@ -178,6 +178,30 @@ def test_no_threads_are_started(needs_mongod, tmp_path):
         assert active_count() == 1
     # After
     assert active_count() == 1
+
+
+def test_mongo_ping(needs_mongod, tmp_path):
+    with InstantMongoDB(tmp_path) as im:
+        assert mongo_ping(im.port) is True
+        assert active_count() == 1  # no threads started by the ping
+
+
+def test_mongo_ping_unresponsive_listener():
+    with socket(AF_INET, SOCK_STREAM) as listener:
+        listener.bind(('127.0.0.1', 0))
+        listener.listen(1)
+        port = listener.getsockname()[1]
+        t0 = monotonic()
+        assert mongo_ping(port, timeout=0.2) is False
+        assert monotonic() - t0 < 2
+
+
+def test_mongo_ping_closed_port():
+    with socket(AF_INET, SOCK_STREAM) as s:
+        s.bind(('127.0.0.1', 0))
+        port = s.getsockname()[1]
+    # nothing is listening on the port any more
+    assert mongo_ping(port) is False
 
 
 def test_start_fails_when_port_is_occupied_by_another_process(needs_mongod, tmp_path):
