@@ -169,10 +169,12 @@ class InstantMongoDB:
                 sleep(.01)
         finally:
             # Do not leave the ping client's background threads running (fork safety).
-            # Join only the threads created here - other MongoClient instances
-            # (possibly never closed) may have their own threads running.
+            # Join only pymongo threads created during the ping - other MongoClient
+            # instances (possibly never closed) may have their own threads running.
+            # The ping client's threads exit within 0.5 s after close().
             for t in set(enumerate_threads()) - threads_before:
-                t.join(timeout=10)
+                if t.name.startswith('pymongo_'):
+                    t.join(timeout=2)
 
     def _init_rs(self):
         if not self.as_replica_set:
