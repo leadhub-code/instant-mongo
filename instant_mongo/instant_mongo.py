@@ -1,6 +1,6 @@
 from contextlib import ExitStack
 from logging import getLogger
-from os import getpid
+from os import environ, getpid
 from pathlib import Path
 from pymongo import MongoClient
 from pymongo.database import Database
@@ -47,13 +47,13 @@ class InstantMongoDB:
     def __init__(
             self, data_parent_dir=None, *, data_dir=None, port=None,
             as_replica_set=False, delete_data_dir_on_exit=None,
-            follow_logs=False, mongod_bin='mongod'):
+            follow_logs=False, mongod_bin=None):
         self.logger = logger
         self.port: Optional[int] = port
         self.as_replica_set = as_replica_set
         self.delete_data_dir_on_exit = delete_data_dir_on_exit
         self.follow_logs = follow_logs
-        self.mongod_bin = mongod_bin
+        self.mongod_bin = mongod_bin or environ.get('IM_MONGOD_BIN') or 'mongod'
         self._exit_stack = None
         # figure out self.data_dir
         if data_dir:

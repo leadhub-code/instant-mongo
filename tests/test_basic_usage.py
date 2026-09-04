@@ -181,3 +181,25 @@ def test_start_with_invalid_mongod_binary(tmp_path):
     with raises(FileNotFoundError):
         with InstantMongoDB(tmp_path, mongod_bin='nonexistent-mongod-binary'):
             pass
+
+
+def test_mongod_bin_from_env_var(tmp_path, monkeypatch):
+    monkeypatch.setenv('IM_MONGOD_BIN', 'nonexistent-mongod-binary-from-env')
+    im = InstantMongoDB(tmp_path)
+    assert im.mongod_bin == 'nonexistent-mongod-binary-from-env'
+    with raises(FileNotFoundError):
+        with im:
+            pass
+
+
+def test_mongod_bin_parameter_overrides_env_var(tmp_path, monkeypatch):
+    monkeypatch.setenv('IM_MONGOD_BIN', 'nonexistent-mongod-binary-from-env')
+    im = InstantMongoDB(tmp_path, mongod_bin='mongod')
+    assert im.mongod_bin == 'mongod'
+
+
+def test_mongod_bin_default(tmp_path, monkeypatch):
+    monkeypatch.delenv('IM_MONGOD_BIN', raising=False)
+    assert InstantMongoDB(tmp_path).mongod_bin == 'mongod'
+    monkeypatch.setenv('IM_MONGOD_BIN', '')
+    assert InstantMongoDB(tmp_path).mongod_bin == 'mongod'

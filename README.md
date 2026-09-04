@@ -31,7 +31,7 @@ instant-mongo @ https://github.com/leadhub-code/instant-mongo/archive/v1.1.0.zip
 Usage
 -----
 
-You need to have `mongod` installed. See [installation instructions](https://www.mongodb.com/docs/manual/installation/).
+You need to have `mongod` installed. See [installation instructions](https://www.mongodb.com/docs/manual/installation/) or use [`scripts/install-mongod.py`](scripts/install-mongod.py) (Debian/Ubuntu only, installs `mongod` into `~/.local/bin`).
 
 Example:
 
@@ -206,7 +206,7 @@ Context manager that starts and stops a temporary MongoDB server.
 ```python
 with InstantMongoDB(data_parent_dir=None, *, data_dir=None, port=None,
                     as_replica_set=False, delete_data_dir_on_exit=None,
-                    follow_logs=False, mongod_bin='mongod') as im:
+                    follow_logs=False, mongod_bin=None) as im:
     ...
 ```
 
@@ -218,7 +218,7 @@ with InstantMongoDB(data_parent_dir=None, *, data_dir=None, port=None,
 - `as_replica_set` — if `True`, MongoDB is started as a single-node replica set (required for transactions).
 - `delete_data_dir_on_exit` — if `True` (or `None` and no `data_dir` is provided), the data directory is deleted when the context manager exits.
 - `follow_logs` — if `True`, `mongod` stdout/stderr will be read (in background threads) and forwarded to Python logging.
-- `mongod_bin` — path or name of the `mongod` binary (default: `'mongod'`).
+- `mongod_bin` — path or name of the `mongod` binary. If not provided, the `IM_MONGOD_BIN` environment variable is used; if that is not set either, `'mongod'` is looked up in `PATH`.
 
 **Properties:**
 
@@ -235,6 +235,14 @@ with InstantMongoDB(data_parent_dir=None, *, data_dir=None, port=None,
 - `im.drop_everything()` — drops all databases and collections (except internal ones). Intended for cleanup between tests.
 - `im.start()` / `im.stop()` — start and stop the MongoDB process manually (normally handled by the context manager).
 
+### Environment variables
+
+- `IM_MONGOD_BIN` — path or name of the `mongod` binary to use when the `mongod_bin` constructor parameter is not provided. Useful for CI or machines where `mongod` is not in `PATH`:
+
+  ```sh
+  $ IM_MONGOD_BIN=/opt/mongodb/bin/mongod pytest
+  ```
+
 
 Similar projects
 ----------------
@@ -249,6 +257,8 @@ Changelog
 ---------
 
 ### Development version
+
+- Add `IM_MONGOD_BIN` environment variable as a fallback for the `mongod_bin` parameter
 
 ### 1.1.0 (2026-03-19)
 
