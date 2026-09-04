@@ -51,6 +51,7 @@ class PortGuard:
                     self._next_port = self._start_port
                 continue
             self._guard_sockets.append(s_guard)
+            self._next_port += 2
             return (app_port, s_app)
 
     def get_available_port(self):

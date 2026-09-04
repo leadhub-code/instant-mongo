@@ -24,6 +24,13 @@ def test_get_available_port_returns_unique_ports():
         assert len(set(ports)) == len(ports)
 
 
+def test_next_port_advances_after_successful_allocation():
+    with PortGuard(start_port=20000) as pg:
+        port = pg.get_available_port()
+        # the next pair must be tried next time, not the pair just allocated
+        assert pg._next_port == port + 1
+
+
 def test_get_listening_socket():
     with PortGuard() as pg:
         port, sock = pg.get_listening_socket()
