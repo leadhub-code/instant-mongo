@@ -223,7 +223,7 @@ class InstantMongoDB:
 
         The instance will also be cached and returned again on subsequent calls.
         '''
-        if not self._client:
+        if self._client is None:
             self._client = self.get_client(connect=True)
         return self._client
 
@@ -295,7 +295,10 @@ class InstantMongoDB:
         Intended to clean up the database after each test.
         '''
         with ExitStack() as stack:
-            client = self._client or stack.enter_context(self.get_client(connect=True))
+            if self._client is not None:
+                client = self._client
+            else:
+                client = stack.enter_context(self.get_client(connect=True))
             drop_all_dbs(client)
 
 
