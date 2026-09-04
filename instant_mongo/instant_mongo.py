@@ -330,7 +330,7 @@ class MongoDBProcess:
                 '--bind_ip', '127.0.0.1',
                 '--directoryperdb',
                 '--storageEngine', 'wiredTiger',
-                '--wiredTigerCacheSizeGB', '1',
+                '--wiredTigerCacheSizeGB', '0.5',
             ]
             if self._as_replica_set:
                 cmd.extend([
