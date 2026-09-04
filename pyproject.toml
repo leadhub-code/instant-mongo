@@ -7,7 +7,7 @@ name = "instant-mongo"
 version = "1.1.0"
 description = "MongoDB runner for integration (and other) tests"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 license = "MIT"
 authors = [
     {name = "Petr Messner", email = "petr.messner@gmail.com"}
